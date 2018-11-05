@@ -6,11 +6,12 @@
 Mean Under the Optimal Individualized Rule and Average Treatment Effect
 target parameters.}
 \usage{
-tmle3_sadapt(surrogate = TRUE, S = S, W = c("W1", "W2", "W3"), V = NULL,
-  A = "A", Y = "Y", learners = learner_list, data, param = "opt",
-  training_size = 100, test_size = 20, mini_batch = 25, Gexploit = 0.1,
-  Gexplore = 0.01, n_max = 1600, by = 200, n = nrow(data),
-  gen_data = gen_data, gen_data_adapt = gen_data_adapt)
+tmle3_sadapt(surrogate = TRUE, S = S, W = c("W1", "W2", "W3"),
+  V = NULL, A = "A", Y = "Y", learners = learner_list, data,
+  param = "opt", training_size = 100, test_size = 20,
+  mini_batch = 25, Gexploit = 0.1, Gexplore = 0.01, n_max = 1600,
+  by = 200, n = nrow(data), gen_data = gen_data,
+  gen_data_adapt = gen_data_adapt)
 }
 \arguments{
 \item{surrogate}{If \code{TRUE}, adaptively learns the target parameter with respect to the
