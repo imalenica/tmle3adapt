@@ -1,0 +1,37 @@
+Package: tmle3adapt
+Title: Targeted Sequential Design for the eatment Rule or the Average Treatmen Effect with Optimal Surrogate Outcome.
+Version: 0.1.0
+Authors@R: c(
+    person("Ivana", "Malenica", email = "imalenica@berkeley.edu",
+           role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0002-7404-8088")),
+    person("Jeremy", "Coyle", email = "jeremy.coyle@gmail.com",
+           role = c("aut", "cph"),
+           comment = c(ORCID = "0000-0002-9874-6649")),
+    person("Mark", "van der Laan", email = "laan@berkeley.edu",
+           role = c("aut", "ths")))
+Description: Adaptively learns the Mean under the Optimal Individualized Treatment Rule or the Average Treatmen Effect in a sequential trial, possibly by finding an optimal surrogate outcome.
+Depends: R (>= 3.5.0)
+License: GPL-3
+Encoding: UTF-8
+LazyData: true
+LazyLoad: yes
+Imports:
+    data.table,
+    assertthat,
+    R6,
+    uuid,
+    methods,
+    stats
+Suggests:
+    testthat,
+    knitr,
+    rmarkdown
+Remotes:
+    github::tlverse/tmle3,
+    github::tlverse/sl3,
+    github::tlverse/origami,
+    github::tlverse/delayed
+BugReports: https://github.com/podTockom/tmle3adapt/issues
+VignetteBuilder: knitr
+RoxygenNote: 6.1.0
