@@ -21,6 +21,8 @@ v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/
 **Authors:** [Ivana Malenica](https://github.com/podTockom) and [Mark
 van der Laan](https://vanderlaan-lab.org)
 
+-----
+
 ## What’s `tmle3adapt`?
 
 The goal of `tmle3adapt` is to …
@@ -29,7 +31,7 @@ The goal of `tmle3adapt` is to …
 
 ## Installation
 
-You can install the development version of `tmle3shift` from GitHub via
+You can install the development version of `tmle3adapt` from GitHub via
 [`devtools`](https://www.rstudio.com/products/rpackages/devtools/) with
 
 ``` r
