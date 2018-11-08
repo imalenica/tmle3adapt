@@ -1,32 +1,32 @@
-#' Adaptively learns the Mean under the Optimal Individualized Treatment Rule or the
-#' Average Treatmen Effect in a sequential trial, possibly by finding an optimal
-#' surrogate outcome.
+#' Adaptively learns the Mean under the Optimal Individualized Treatment Rule or
+#' the Average Treatmen Effect in a sequential trial, possibly by finding an
+#' optimal surrogate outcome.
 #'
 #' @importFrom R6 R6Class
 #'
 #' @export
 #
-
 tmle3_Spec_adapt <- R6Class(
   classname = "tmle3_Spec_adapt",
   portable = TRUE,
   class = TRUE,
   inherit = tmle3_Spec,
   public = list(
-    initialize = function(S = NULL, V = NULL, learners, param = "opt",
-                              training_size, test_size, mini_batch,
-                              Gexploit = 0.1, Gexplore = 0.05, ...) {
+    initialize = function(surrogate = TRUE, S = NULL, V = NULL, learners,
+                          param = "opt", training_size, test_size, mini_batch,
+                          Gexploit = 0.1, Gexplore = 0.05, ...) {
       options <- list(
         S = S, V = V, param = param, learners = learners,
-        training_size = training_size, test_size = test_size, mini_batch = mini_batch,
-        Gexploit = Gexploit, Gexplore = Gexplore
+        training_size = training_size, test_size = test_size,
+        mini_batch = mini_batch, Gexploit = Gexploit, Gexplore = Gexplore
       )
       do.call(super$initialize, options)
     },
 
     ##################################
     # Function useful for simulations!
-    new_Gstar = function(gen_data, gen_data_adapt, by, old_data, node_list, initial_likelihood) {
+    new_Gstar = function(gen_data, gen_data_adapt, by, old_data, node_list,
+                         initial_likelihood) {
       data_new <- gen_data(n = by)
       tmle_task_new <- self$make_tmle_task(data_new, node_list)
       blip_task <- self$get_blip_cf(tmle_task_new)
@@ -148,7 +148,8 @@ tmle3_Spec_adapt <- R6Class(
     },
 
     get_rule = function(task, likelihood) {
-      return(as.numeric(self$Q(task[[2]], likelihood) - self$Q(task[[1]], likelihood) > 0))
+      return(as.numeric(self$Q(task[[2]], likelihood) - self$Q(task[[1]],
+                                                               likelihood) > 0))
     },
 
     get_blip_cf = function(tmle_task) {
@@ -157,7 +158,8 @@ tmle3_Spec_adapt <- R6Class(
       # Generate counterfactual tasks for each value of A:
       cf_tasks <- lapply(A_vals, function(A_val) {
         newdata <- data.table(A = A_val)
-        cf_task <- tmle_task$generate_counterfactual_task(UUIDgenerate(), new_data = newdata)
+        cf_task <- tmle_task$generate_counterfactual_task(UUIDgenerate(),
+                                                          new_data = newdata)
         return(cf_task)
       })
       return(cf_tasks)
@@ -174,7 +176,8 @@ tmle3_Spec_adapt <- R6Class(
       # Generate counterfactual tasks for each value of A:
       cf_tasks <- lapply(A_vals, function(A_val) {
         newdata <- data.table(A = A_val)
-        cf_task <- tmle_task$generate_counterfactual_task(UUIDgenerate(), new_data = newdata)
+        cf_task <- tmle_task$generate_counterfactual_task(UUIDgenerate(),
+                                                          new_data = newdata)
         return(cf_task)
       })
 
@@ -191,7 +194,8 @@ tmle3_Spec_adapt <- R6Class(
 
       # How to incorporate weights?
       lf_rule <- define_lf(LF_rule, "A", rule_fun = rA)
-      intervens <- Param_TSM$new(observed_likelihood = likelihood, intervention_list = lf_rule)
+      intervens <- Param_TSM$new(observed_likelihood = likelihood,
+                                 intervention_list = lf_rule)
       # intervens <- Param_TSM_weight$new(observed_likelihood=likelihood,
       #                                 weight=weight,
       #                                intervention_list=lf_rule)
@@ -260,9 +264,9 @@ tmle3_Spec_adapt <- R6Class(
   )
 )
 
-#' Adaptively learns the Mean under the Optimal Individualized Treatment Rule or the
-#' Average Treatmen Effect in a sequential trial, possibly by finding an optimal
-#' surrogate outcome.
+#' Adaptively learns the Mean under the Optimal Individualized Treatment Rule or
+#' the Average Treatmen Effect in a sequential trial, possibly by finding an
+#' optimal surrogate outcome.
 #'
 #' O=(W,A,S,Y)
 #' W=Covariates
@@ -270,27 +274,30 @@ tmle3_Spec_adapt <- R6Class(
 #' S=Potential Surrogates
 #' Y=Outcome (binary or bounded continuous)
 #'
-#' @param S Covariates to consider for the Optimal Surrogate estimation. Leave empty if no surrage is used.
+#' @param surrogate \code{TRUE} if performing surrogate estimation.
+#' @param S Covariates to consider for the Optimal Surrogate estimation. Leave
+#'  empty if no surrogate is used.
 #' @param learners List of learners used for Q,g,S and B.
-#' @param param Target parameter. Current implementation supports Mean under the Optimal Individualized
-#' Treatment (opt) and Average Treatment Effect (are)
+#' @param param Target parameter. Current implementation supports Mean under the
+#'  Optimal Individualized Treatment (opt) and Average Treatment Effect (are)
 #' @param V Covariates the rule depends on. Not used at the moment.
-#' @param training_size Size of the initial training set. Necessary part of online Super Learner.
-#' @param test_size Size of the test set. Necessary part of online Super Learner.
-#' @param mini_batch Size of the increase in the initial training size, added per each iteration of the
-#' online Super Learner.
+#' @param training_size Size of the initial training set. Necessary part of
+#'  online Super Learner.
+#' @param test_size Size of the test set. Necessary part of online Super
+#'  Learner.
+#' @param mini_batch Size of the increase in the initial training size, added
+#'  per each iteration of the online Super Learner.
 #' @param Gexploit Sequence t_n. Default is 0.1.
 #' @param Gexplore Sequence e_n. Default is 0.05.
 #'
 #' @export
-#'
-
-tmle3_adapt <- function(S = NULL, V = NULL, learners, param = "opt",
-                        training_size, test_size, mini_batch,
+#
+tmle3_adapt <- function(surrogate = TRUE, S = NULL, V = NULL, learners,
+                        param = "opt", training_size, test_size, mini_batch,
                         Gexploit = 0.1, Gexplore = 0.05) {
   tmle3_Spec_adapt$new(
     surrogate = surrogate, S = S, V = V, learners = learners, param = param,
-    training_size = training_size, test_size = test_size, mini_batch = mini_batch,
-    Gexploit = Gexploit, Gexplore = Gexplore
+    training_size = training_size, test_size = test_size,
+    mini_batch = mini_batch, Gexploit = Gexploit, Gexplore = Gexplore
   )
 }
