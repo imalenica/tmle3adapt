@@ -56,7 +56,7 @@ tmle3_Spec_surrogate <- R6Class(
       }
       else {
         folds <- origami::make_folds(data,
-          fold_fun = folds_rolling_window,
+          fold_fun = origami::folds_rolling_window,
           window_size = training_size,
           validation_size = test_size, gap = 0,
           batch = mini_batch

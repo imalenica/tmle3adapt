@@ -206,6 +206,9 @@ Optimal_Surrogate <- R6Class(
     },
     get_S_pred = function() {
       param <- private$sur_sl
+    },
+    get_sur_sl = function(){
+     return(private$sur_sl) 
     }
   ),
   private = list(

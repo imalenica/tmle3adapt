@@ -3,16 +3,16 @@
 \docType{data}
 \name{tmle3_Spec_adapt}
 \alias{tmle3_Spec_adapt}
-\title{Adaptively learns the Mean under the Optimal Individualized Treatment Rule or the
-Average Treatmen Effect in a sequential trial, possibly by finding an optimal
-surrogate outcome.}
+\title{Adaptively learns the Mean under the Optimal Individualized Treatment Rule or
+the Average Treatmen Effect in a sequential trial, possibly by finding an
+optimal surrogate outcome.}
 \format{An object of class \code{R6ClassGenerator} of length 24.}
 \usage{
 tmle3_Spec_adapt
 }
 \description{
-Adaptively learns the Mean under the Optimal Individualized Treatment Rule or the
-Average Treatmen Effect in a sequential trial, possibly by finding an optimal
-surrogate outcome.
+Adaptively learns the Mean under the Optimal Individualized Treatment Rule or
+the Average Treatmen Effect in a sequential trial, possibly by finding an
+optimal surrogate outcome.
 }
 \keyword{datasets}
