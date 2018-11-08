@@ -8,6 +8,8 @@ library(data.table)
 library(tmle3adapt)
 library(tmle3)
 library(tmle3mopttx)
+library(origami)
+library(here)
 
 set.seed(1234)
 
@@ -60,19 +62,20 @@ A="A"
 Y="Y"
 V=NULL
 param="opt"
-training_size=100
+training_size=800
 test_size=20
-mini_batch=25
+mini_batch=20
 Gexploit=0.1
 Gexplore=0.01
 n_max=1600
 by=200
 n=1000
+rho=0.2
 source(here("Sandbox/Generate_DGD_1b.R"))
 
 MC=500
-est_d0<-data.frame(matrix(NA,nrow = MC, ncol=40))
-cov<-data.frame(matrix(NA,nrow=MC,ncol=8))
+est_d0<-data.frame(matrix(NA,nrow = MC, ncol=10))
+cov<-data.frame(matrix(NA,nrow=MC,ncol=4))
 
 for(i in 1:MC){
   

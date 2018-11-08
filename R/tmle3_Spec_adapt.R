@@ -26,18 +26,24 @@ tmle3_Spec_adapt <- R6Class(
 
     ##################################
     # Function useful for simulations!
-    new_Gstar = function(gen_data, gen_data_adapt, by, old_data, node_list, initial_likelihood) {
+    new_Gstar = function(gen_data, gen_data_adapt, by, node_list, initial_likelihood) {
       data_new <- gen_data(n = by)
-      tmle_task_new <- self$make_tmle_task(data_new, node_list)
+      tmle_task_new <- self$make_tmle_task(data_new, node_list, initial=TRUE)
       blip_task <- self$get_blip_cf(tmle_task_new)
       dn <- self$get_Gstar(blip_task, initial_likelihood)
-      W <- old_data[, 1:3]
+      W <- data_new[, 1:3]
 
       data_targeted <- gen_data_adapt(n = by, Gstar = dn, W = W)
 
-      data <- rbind.data.frame(data, data_targeted)
-      return(data)
+      return(data_targeted)
     },
+    
+    new_data = function(inter, old_data,tmle_spec){
+      
+      #Create the optimal surrogate:
+      tmle_spec
+      
+    }
 
     bound = function(g) {
       g[g < 0.01] <- 0.01
@@ -45,7 +51,7 @@ tmle3_Spec_adapt <- R6Class(
       return(g)
     },
 
-    make_tmle_task = function(data, node_list, ...) {
+    make_tmle_task = function(data, node_list, initial=FALSE, ...) {
       setDT(data)
 
       Y_node <- node_list$Y
@@ -74,10 +80,11 @@ tmle3_Spec_adapt <- R6Class(
         define_node("Y", node_list$Y, c("A", "W"), Y_variable_type)
       )
 
-      if (!is.null(node_list$id)) {
-        tmle_task <- tmle3_Task$new(data, npsem = npsem, id = node_list$id, ...)
+      if (initial) {
+        tmle_task <- tmle3_Task$new(data, npsem = npsem)
       }
       else {
+        #TO DO: Change this to folds_rolling_origin...
         folds <- origami::make_folds(data,
           fold_fun = folds_rolling_window,
           window_size = training_size,
@@ -255,9 +262,7 @@ tmle3_Spec_adapt <- R6Class(
       param <- private$.options$param
     }
   ),
-  private = list(
-    sur_sl = list()
-  )
+  private = list()
 )
 
 #' Adaptively learns the Mean under the Optimal Individualized Treatment Rule or the

@@ -66,6 +66,11 @@ tmle3_Spec_surrogate <- R6Class(
       }
       return(tmle_task)
     },
+    
+    new_surrogate = function(inter){
+      sur_sl<-self$get_sur_sl
+      
+    },
 
     make_params = function(tmle_task, likelihood) {
       S <- self$get_S
@@ -86,6 +91,8 @@ tmle3_Spec_surrogate <- R6Class(
 
       data <- tmle_task$get_data()
       data$Y <- Starg_pred
+      
+      private$sur_sl<-opt
 
       return(data)
     }
@@ -126,8 +133,13 @@ tmle3_Spec_surrogate <- R6Class(
     get_param = function() {
       param <- private$.options$param
     }
+    get_sur_sl = function(){
+      return(private$sur_sl)
+    }
   ),
-  private = list()
+  private = list(
+    sur_sl=list()
+  )
 )
 
 #' Learns the Optimal Surrogate based on the observed final outcome Y, for the

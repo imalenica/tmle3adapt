@@ -49,7 +49,7 @@ tmle3_sadapt <- function(surrogate = TRUE, S = S, W = c("W1", "W2", "W3"), V = N
       V = V,
       learners = learner_list,
       param = param,
-      training_size = training_size,
+      training_size = training_size, 
       test_size = test_size,
       mini_batch = mini_batch
     )
