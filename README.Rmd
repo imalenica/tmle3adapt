@@ -21,13 +21,13 @@ knitr::opts_chunk$set(
 [![Project Status: WIP – Initial development is in progress, but there has not yet been a stable, usable release suitable for the public.](https://www.repostatus.org/badges/latest/wip.svg)](https://www.repostatus.org/#wip)
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0)
 
-> Targeted Sequential Designs for Learning the Optimal Treatment Rule or Average
-> Treatment Effect from Optimal Surrogate Outcomes
+> Targeted Sequential Designs for Learning Optimal Treatment Rules or Average
+> Treatment Effects from Optimal Surrogates
 
-__Authors:__ [Ivana Malenica](https://github.com/podTockom), and [Mark van der
+__Authors:__ [Ivana Malenica](https://github.com/podTockom) and [Mark van der
 Laan](https://vanderlaan-lab.org)
 
-# What's `tmle3adapt`?
+## What's `tmle3adapt`?
 
 The goal of `tmle3adapt` is to ...
 

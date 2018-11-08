@@ -15,13 +15,13 @@ public.](https://www.repostatus.org/badges/latest/wip.svg)](https://www.repostat
 [![License: GPL
 v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0)
 
-> Targeted Sequential Designs for Learning the Optimal Treatment Rule or
-> Average Treatment Effect from Optimal Surrogate Outcomes
+> Targeted Sequential Designs for Learning Optimal Treatment Rules or
+> Average Treatment Effects from Optimal Surrogates
 
-**Authors:** [Ivana Malenica](https://github.com/podTockom), and [Mark
+**Authors:** [Ivana Malenica](https://github.com/podTockom) and [Mark
 van der Laan](https://vanderlaan-lab.org)
 
-# What’s `tmle3adapt`?
+## What’s `tmle3adapt`?
 
 The goal of `tmle3adapt` is to …
 
