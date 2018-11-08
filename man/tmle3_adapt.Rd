@@ -2,30 +2,35 @@
 % Please edit documentation in R/tmle3_Spec_adapt.R
 \name{tmle3_adapt}
 \alias{tmle3_adapt}
-\title{Adaptively learns the Mean under the Optimal Individualized Treatment Rule or the
-Average Treatmen Effect in a sequential trial, possibly by finding an optimal
-surrogate outcome.}
+\title{Adaptively learns the Mean under the Optimal Individualized Treatment Rule or
+the Average Treatmen Effect in a sequential trial, possibly by finding an
+optimal surrogate outcome.}
 \usage{
-tmle3_adapt(S = NULL, V = NULL, learners, param = "opt",
-  training_size, test_size, mini_batch, Gexploit = 0.1,
+tmle3_adapt(surrogate = TRUE, S = NULL, V = NULL, learners,
+  param = "opt", training_size, test_size, mini_batch, Gexploit = 0.1,
   Gexplore = 0.05)
 }
 \arguments{
-\item{S}{Covariates to consider for the Optimal Surrogate estimation. Leave empty if no surrage is used.}
+\item{surrogate}{\code{TRUE} if performing surrogate estimation.}
+
+\item{S}{Covariates to consider for the Optimal Surrogate estimation. Leave
+empty if no surrogate is used.}
 
 \item{V}{Covariates the rule depends on. Not used at the moment.}
 
 \item{learners}{List of learners used for Q,g,S and B.}
 
-\item{param}{Target parameter. Current implementation supports Mean under the Optimal Individualized
-Treatment (opt) and Average Treatment Effect (are)}
+\item{param}{Target parameter. Current implementation supports Mean under the
+Optimal Individualized Treatment (opt) and Average Treatment Effect (are)}
 
-\item{training_size}{Size of the initial training set. Necessary part of online Super Learner.}
-
-\item{test_size}{Size of the test set. Necessary part of online Super Learner.}
-
-\item{mini_batch}{Size of the increase in the initial training size, added per each iteration of the
+\item{training_size}{Size of the initial training set. Necessary part of
 online Super Learner.}
+
+\item{test_size}{Size of the test set. Necessary part of online Super
+Learner.}
+
+\item{mini_batch}{Size of the increase in the initial training size, added
+per each iteration of the online Super Learner.}
 
 \item{Gexploit}{Sequence t_n. Default is 0.1.}
 
