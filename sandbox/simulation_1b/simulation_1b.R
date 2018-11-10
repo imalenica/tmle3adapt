@@ -8,9 +8,8 @@ library(sl3)
 library(tmle3adapt)
 library(tmle3)
 library(tmle3mopttx)
-set.seed(1234)
 
-load(here("data", "data_rho0.2.rda"))
+load(here("data_rho0.2.rda"))
 data <- data_rho0.2[, 1:9]
 
 #True mean under true rule:
@@ -49,9 +48,31 @@ s_learner <- Lrnr_sl$new(
   metalearner = Lrnr_nnls$new()
 )
 
+#Simple
+Q_learner <- Lrnr_sl$new(
+  #learners = list(xgboost_50,xgboost_100,glmnet_0.2,glmnet_0.8,lrn2),
+  learners = list(glmnet_0.8, lrn1, lrn2, lrn3),
+  metalearner = Lrnr_nnls$new()
+)
+
+g_learner <- Lrnr_sl$new(
+  learners = list(xgboost_50, glmnet_0.8, lrn2),
+  metalearner = Lrnr_nnls$new()
+)
+
+b_learner <- Lrnr_sl$new(
+  learners = list(xgboost_50, glmnet_0.8, lrn2),
+  metalearner = Lrnr_nnls$new()
+)
+
+s_learner <- Lrnr_sl$new(
+  learners = list(xgboost_50, glmnet_0.8, lrn2),
+  metalearner = Lrnr_nnls$new()
+)
+
 learner_list <- list(Y = Q_learner, A = g_learner, B = b_learner, S = s_learner)
 learners = learner_list
-surrogate = TRUE
+surrogate = FALSE
 S = c("S1", "S2", "S3", "S4")
 W = c("W1","W2","W3")
 A = "A"
@@ -69,8 +90,8 @@ n = 1000
 source(here("sandbox/Generate_DGD_1b.R"))
 
 MC = 500
-est_d0 <- data.frame(matrix(NA, nrow = MC, ncol = 40))
-cov <- data.frame(matrix(NA, nrow = MC, ncol = 8))
+est_d0 <- data.frame(matrix(NA, nrow = MC, ncol = 10))
+cov <- data.frame(matrix(NA, nrow = MC, ncol = 4))
 
 # Monte Carlo iterations
 for(i in seq_len(MC)) {

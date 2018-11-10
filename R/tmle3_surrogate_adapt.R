@@ -58,7 +58,7 @@ tmle3_sadapt <- function(surrogate = TRUE, S = S,
       V = V,
       learners = learners,
       param = param,
-      training_size = training_size, 
+      training_size = training_size,
       test_size = test_size,
       mini_batch = mini_batch
     )
@@ -70,8 +70,10 @@ tmle3_sadapt <- function(surrogate = TRUE, S = S,
     tmle_task <- tmle_spec$make_tmle_task(data, node_list)
 
     # Define likelihood:
-    initial_likelihood <- tmle_spec$make_initial_likelihood(tmle_task,
-                                                            learners)
+    initial_likelihood <- tmle_spec$make_initial_likelihood(
+      tmle_task,
+      learners
+    )
     data <- tmle_spec$make_params(tmle_task, initial_likelihood)
 
     # Define spec:
@@ -97,8 +99,10 @@ tmle3_sadapt <- function(surrogate = TRUE, S = S,
     tmle_params <- tmle_spec_adapt$make_params(tmle_task, targeted_likelihood)
 
     while (n <= n_max) {
-      data <- tmle_spec_adapt$new_Gstar(gen_data, gen_data_adapt, by, old_data,
-                                        node_list, initial_likelihood)
+      data <- tmle_spec_adapt$new_Gstar(
+        gen_data, gen_data_adapt, by, old_data,
+        node_list, initial_likelihood
+      )
       tmle_task <- tmle_spec_adapt$make_tmle_task(data, node_list)
 
       # Define a new likelihood:
@@ -108,13 +112,19 @@ tmle3_sadapt <- function(surrogate = TRUE, S = S,
       targeted_likelihood <-
         tmle_spec_adapt$make_targeted_likelihood(initial_likelihood, updater)
 
-      tmle_params <- c(tmle_params,
-                       tmle_spec_adapt$make_params(tmle_task,
-                                                   targeted_likelihood))
+      tmle_params <- c(
+        tmle_params,
+        tmle_spec_adapt$make_params(
+          tmle_task,
+          targeted_likelihood
+        )
+      )
       n <- n + by
     }
-    fit <- tmle3::fit_tmle3(tmle_task, targeted_likelihood, tmle_params,
-                            updater)
+    fit <- tmle3::fit_tmle3(
+      tmle_task, targeted_likelihood, tmle_params,
+      updater
+    )
   } else {
     # Define spec:
     tmle_spec_adapt <- tmle3_adapt(
@@ -140,8 +150,10 @@ tmle3_sadapt <- function(surrogate = TRUE, S = S,
     tmle_params <- tmle_spec_adapt$make_params(tmle_task, targeted_likelihood)
 
     while (n <= n_max) {
-      data <- tmle_spec_adapt$new_Gstar(gen_data, gen_data_adapt, by, old_data,
-                                        node_list, initial_likelihood)
+      data <- tmle_spec_adapt$new_Gstar(
+        gen_data, gen_data_adapt, by, old_data,
+        node_list, initial_likelihood
+      )
       tmle_task <- tmle_spec_adapt$make_tmle_task(data, node_list)
 
       # Define a new likelihood:
@@ -151,9 +163,13 @@ tmle3_sadapt <- function(surrogate = TRUE, S = S,
       targeted_likelihood <-
         tmle_spec_adapt$make_targeted_likelihood(initial_likelihood, updater)
 
-      tmle_params <- c(tmle_params,
-                       tmle_spec_adapt$make_params(tmle_task,
-                                                   targeted_likelihood))
+      tmle_params <- c(
+        tmle_params,
+        tmle_spec_adapt$make_params(
+          tmle_task,
+          targeted_likelihood
+        )
+      )
       n <- n + by
     }
     fit <- fit_tmle3(tmle_task, targeted_likelihood, tmle_params, updater)

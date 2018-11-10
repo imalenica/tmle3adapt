@@ -13,8 +13,10 @@ tmle3_Spec_surrogate <- R6Class(
   class = TRUE,
   inherit = tmle3_Spec,
   public = list(
+    # TO DO: Should we learn the initial estimates using Online Learning?
+    # Theoretically, no need
     initialize = function(S, V = NULL, learners, param = "opt",
-                              training_size, test_size, mini_batch, ...) {
+                              training_size = NULL, test_size = NULL, mini_batch = NULL, ...) {
       options <- list(
         S = S, V = V, param = param, learners = learners,
         training_size = training_size, test_size = test_size, mini_batch = mini_batch
@@ -55,21 +57,28 @@ tmle3_Spec_surrogate <- R6Class(
         tmle_task <- tmle3_Task$new(data, npsem = npsem, id = node_list$id, ...)
       }
       else {
-        folds <- origami::make_folds(data,
-          fold_fun = origami::folds_rolling_window,
-          window_size = training_size,
-          validation_size = test_size, gap = 0,
-          batch = mini_batch
-        )
+        # folds <- origami::make_folds(data,
+        #  fold_fun = origami::folds_rolling_window,
+        #  window_size = training_size,
+        #  validation_size = test_size, gap = 0,
+        #  batch = mini_batch
+        # )
         # TO DO: Add weights g^ref/g
-        tmle_task <- tmle3_Task$new(data, npsem = npsem, folds = folds)
+        tmle_task <- tmle3_Task$new(data, npsem = npsem)
       }
       return(tmle_task)
     },
-    
-    new_surrogate = function(inter){
-      sur_sl<-self$get_sur_sl
-      
+
+    get_surrogate = function(inter) {
+      # Get the fit we learned in the 1st part of the trial:
+      osl <- self$get_sur_sl
+      sur_sl <- osl$get_sur_sl
+
+      # TO DO: Y must be last for this to work!
+      covariates <- c(names(inter)[-length(inter)])
+
+      sur_tmle_task <- make_sl3_Task(inter, covariates = covariates, outcome = "Y")
+      S_pred <- sur_sl$predict(sur_tmle_task)
     },
 
     make_params = function(tmle_task, likelihood) {
@@ -83,16 +92,16 @@ tmle3_Spec_surrogate <- R6Class(
         tmle_task = tmle_task, likelihood = likelihood
       )
 
-      ### Learn the SL optimal surrogate:
+      ### Learn the SL optimal surrogate, and save the fit:
       S_pred <- opt$surrogate_SL()
+      private$sur_sl <- opt$get_sur_sl
+      private$opt <- opt
 
       ### Target towards the parameter of interest:
       Starg_pred <- opt$surrogate_TSL(S_pred = S_pred)
 
       data <- tmle_task$get_data()
       data$Y <- Starg_pred
-      
-      private$sur_sl<-opt
 
       return(data)
     }
@@ -132,13 +141,17 @@ tmle3_Spec_surrogate <- R6Class(
     },
     get_param = function() {
       param <- private$.options$param
-    }
-    get_sur_sl = function(){
+    },
+    get_sur_sl = function() {
       return(private$sur_sl)
+    },
+    get_opt = function() {
+      return(private$opt)
     }
   ),
   private = list(
-    sur_sl=list()
+    sur_sl = list(),
+    opt = list()
   )
 )
 
@@ -166,8 +179,8 @@ tmle3_Spec_surrogate <- R6Class(
 #' @export
 #'
 
-tmle3_surrogate <- function(S, V = NULL, learners, param = "opt", training_size,
-                            test_size, mini_batch) {
+tmle3_surrogate <- function(S, V = NULL, learners, param = "opt", training_size = NULL,
+                            test_size = NULL, mini_batch = NULL) {
   tmle3_Spec_surrogate$new(
     S = S, V = V, learners = learners, param = param,
     training_size = training_size, test_size = test_size, mini_batch = mini_batch

@@ -14,13 +14,15 @@ Optimal_Surrogate <- R6Class(
   inherit = tmle3_Spec,
   lock_objects = FALSE,
   public = list(
-    initialize = function(S, V = NULL, learners, param = "opt", tmle_task, likelihood) {
+    initialize = function(S, V = NULL, learners, param = "opt", tmle_task, likelihood,
+                              rule_outcome = "surrogate") {
       private$.S <- S
       private$.V <- V
       private$.learners <- learners
       private$.param <- param
       private$.tmle_task <- tmle_task
       private$.likelihood <- likelihood
+      private$.rule_outcome <- rule_outcome
     },
 
     bound = function(g) {
@@ -47,7 +49,7 @@ Optimal_Surrogate <- R6Class(
       S <- self$get_S
       # folds<-tmle_task$folds
 
-      covariates <- c(S, names(tmle_task$data)[-length(tmle_task$data)])
+      covariates <- c(names(data[, -"Y"]))
 
       sur_tmle_task <- make_sl3_Task(data, covariates = covariates, outcome = "Y")
       sur_sl <- S_learner$train(sur_tmle_task)
@@ -59,7 +61,10 @@ Optimal_Surrogate <- R6Class(
     },
 
     # Targeted SuperLearner of the surrogate:
-    surrogate_TSL = function(S_pred, tmle_task) {
+    surrogate_TSL = function(S_pred) {
+
+      # To run this, we need an estimate of g
+      # TO DO: Should we keep the same model for g? Or refit with new batch of data?
       param <- self$get_param
       tmle_task <- self$tmle_task
       initial_likelihood <- self$likelihood
@@ -74,13 +79,13 @@ Optimal_Surrogate <- R6Class(
         Y <- data$Y
         S <- self$get_S
 
-        folds <- tmle_task$folds
+        # TO DO: Should we use S here as well? Or just Q(A,W)?
+        covariates <- c(names(data[, -"Y"]))
+        Q_tmle_task <- make_sl3_Task(data, covariates = covariates, outcome = "Y")
 
-        covariates <- c(S, names(tmle_task$data)[-length(tmle_task$data)])
-        Q_tmle_task <- make_sl3_Task(data, covariates = covariates, outcome = "Y", folds = folds)
-
-        B_learner <- self$get_B_learner
-        Q_sl <- B_learner$train(Q_tmle_task)
+        Q_learner <- self$get_Q_learner
+        Q_sl <- Q_learner$train(Q_tmle_task)
+        Q_est <- Q_sl$predict()
         private$Q_sl <- Q_sl
 
         A_vals <- tmle_task$npsem$A$variable_type$levels
@@ -91,7 +96,7 @@ Optimal_Surrogate <- R6Class(
           newdata$A <- A_val
           cf_task <- make_sl3_Task(newdata,
             covariates = covariates,
-            outcome = "Y", folds = folds
+            outcome = "Y"
           )
           return(cf_task)
         })
@@ -107,10 +112,10 @@ Optimal_Surrogate <- R6Class(
         # Clever covariate and fluctuation:
         HA <- as.numeric(A == dn) / g.ests
         # Q.ests vs. Y...
-        eps <- coef(glm(Y ~ -1 + HA, offset = qlogis(Y), family = "quasibinomial"))
+        eps <- coef(glm(Y ~ -1 + HA, offset = qlogis(Q_est), family = "quasibinomial"))
 
         # Update:
-        Q.star <- plogis(qlogis(Y) + HA * eps)
+        Q.star <- plogis(qlogis(Q_est) + HA * eps)
 
         # Use tmle3mopptx to get the rule:
         # learner_list <- self$get_learners
@@ -194,6 +199,10 @@ Optimal_Surrogate <- R6Class(
       B_lrn <- private$.learners$B
       return(B_lrn)
     },
+    get_Q_learner = function() {
+      Q_lrn <- private$.learners$Y
+      return(Q_lrn)
+    },
     get_learners = function() {
       lrn <- private$.learners
       return(lrn)
@@ -207,8 +216,11 @@ Optimal_Surrogate <- R6Class(
     get_S_pred = function() {
       param <- private$sur_sl
     },
-    get_sur_sl = function(){
-     return(private$sur_sl) 
+    get_sur_sl = function() {
+      return(private$sur_sl)
+    },
+    get_rule_outcome = function() {
+      return(private$.rule_outcome)
     }
   ),
   private = list(
@@ -219,6 +231,7 @@ Optimal_Surrogate <- R6Class(
     .param = NULL,
     .learners = NULL,
     .tmle_task = list(),
-    .likelihood = list()
+    .likelihood = list(),
+    .rule_outcome = NULL
   )
 )

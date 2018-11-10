@@ -6,8 +6,8 @@
 Mean Under the Optimal Individualized Rule and Average Treatment Effect
 target parameters.}
 \usage{
-tmle3_surrogate(S, V = NULL, learners, param = "opt", training_size,
-  test_size, mini_batch)
+tmle3_surrogate(S, V = NULL, learners, param = "opt",
+  training_size = NULL, test_size = NULL, mini_batch = NULL)
 }
 \arguments{
 \item{S}{Covariates to consider for the Optimal Surrogate estimation.}

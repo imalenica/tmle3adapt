@@ -13,8 +13,8 @@ tmle3_Spec_adapt <- R6Class(
   inherit = tmle3_Spec,
   public = list(
     initialize = function(surrogate = TRUE, S = NULL, V = NULL, learners,
-                          param = "opt", training_size, test_size, mini_batch,
-                          Gexploit = 0.1, Gexplore = 0.05, ...) {
+                              param = "opt", training_size, test_size, mini_batch,
+                              Gexploit = 0.1, Gexplore = 0.05, ...) {
       options <- list(
         S = S, V = V, param = param, learners = learners,
         training_size = training_size, test_size = test_size,
@@ -23,31 +23,79 @@ tmle3_Spec_adapt <- R6Class(
       do.call(super$initialize, options)
     },
 
-    ##################################
-    # Function useful for simulations!
-<<<<<<< HEAD
-    new_Gstar = function(gen_data, gen_data_adapt, by, node_list, initial_likelihood) {
-=======
-    new_Gstar = function(gen_data, gen_data_adapt, by, old_data, node_list,
-                         initial_likelihood) {
->>>>>>> 51a9cd24a2c8b1105f1b7a782bf5235567135676
-      data_new <- gen_data(n = by)
-      tmle_task_new <- self$make_tmle_task(data_new, node_list, initial=TRUE)
-      blip_task <- self$get_blip_cf(tmle_task_new)
-      dn <- self$get_Gstar(blip_task, initial_likelihood)
-      W <- data_new[, 1:3]
+    new_Gstar = function(gen_data = NULL, gen_data_adapt = NULL, W = NULL, by, node_list,
+                             initial_likelihood) {
+      if (is.null(gen_data) & is.null(gen_data_adapt) & is.null(W)) {
+        stop("Either gen_data and gen_data_adapt must be specified, or W.")
+      }
 
-      data_targeted <- gen_data_adapt(n = by, Gstar = dn, W = W)
+      if (!is.null(gen_data) & !is.null(gen_data_adapt)) {
+        data_new <- gen_data(n = by)
 
-      return(data_targeted)
+        tmle_task_new <- self$make_tmle_task(data_new, node_list, initial = TRUE)
+        blip_task <- self$get_blip_cf(tmle_task_new)
+        dn <- self$get_Gstar(blip_task, initial_likelihood)
+        W <- data_new[, 1:3]
+
+        data_targeted <- gen_data_adapt(n = by, Gstar = dn, W = W)
+      } else if (!is.null(W)) {
+        # Pass in Ws, create, dummy A and Y:
+        A <- rbinom(nrow(W), 1, prob = 0.5)
+        Y <- rbinom(nrow(W), 1, prob = 0.5)
+
+        data_new <- cbind.data.frame(W, A, Y)
+
+        tmle_task_new <- self$make_tmle_task(data_new, node_list, initial = TRUE)
+        blip_task <- self$get_blip_cf(tmle_task_new)
+        dn <- self$get_Gstar(blip_task, initial_likelihood)
+
+        data_targeted <- gen_data_adapt(n = by, Gstar = dn, W = W)
+      }
+      return(as.data.table(data_targeted))
     },
-    
-    new_data = function(inter, old_data,tmle_spec){
-      
-      #Create the optimal surrogate:
-      tmle_spec
-      
-    }
+    # This function is used only if we want to learn the rule w.r.t. an optimal surrogate.
+    # It will take the data with targeted randomization probabilities,
+    # data from the last trial, and tmle_spec corresponding to
+    # learning the optimal surrogate part.
+    new_data = function(inter, old_data, tmle_spec, rule_outcome = "surrogate", node_list) {
+
+      ## SL step:
+      sur_sl <- tmle_spec$get_sur_sl
+      covariates <- c(names(inter[, -"Y"]))
+
+      sur_tmle_task <- make_sl3_Task(inter, covariates = covariates, outcome = "Y")
+      S_pred <- sur_sl$predict(sur_tmle_task)
+
+      inter$Y <- S_pred
+
+      ## Targeting step:
+      tmle_spec_new <- tmle3_surrogate(
+        S = self$get_S,
+        V = self$get_V,
+        learners = self$get_learners,
+        param = self$get_param
+      )
+
+      tmle_task_new <- tmle_spec$make_tmle_task(inter, node_list)
+
+      # TO DO: Do we want to learn new g? This might not be the best apprach.
+      initial_likelihood <- tmle_spec$make_initial_likelihood(
+        tmle_task_new,
+        learner_list
+      )
+      opt <- Optimal_Surrogate$new(
+        S = self$get_S, V = self$get_V, learners = self$get_learners, param = self$get_param,
+        tmle_task = tmle_task_new, likelihood = initial_likelihood
+      )
+
+      Starg_pred <- opt$surrogate_TSL(S_pred = S_pred)
+      inter$Y <- Starg_pred
+
+      # Combine:
+      data <- rbind.data.frame(old_data, inter)
+
+      return(data)
+    },
 
     bound = function(g) {
       g[g < 0.01] <- 0.01
@@ -55,7 +103,7 @@ tmle3_Spec_adapt <- R6Class(
       return(g)
     },
 
-    make_tmle_task = function(data, node_list, initial=FALSE, ...) {
+    make_tmle_task = function(data, node_list, initial = FALSE, ...) {
       setDT(data)
 
       Y_node <- node_list$Y
@@ -88,7 +136,7 @@ tmle3_Spec_adapt <- R6Class(
         tmle_task <- tmle3_Task$new(data, npsem = npsem)
       }
       else {
-        #TO DO: Change this to folds_rolling_origin...
+        # TO DO: Change this to folds_rolling_origin...
         folds <- origami::make_folds(data,
           fold_fun = folds_rolling_window,
           window_size = training_size,
@@ -159,8 +207,10 @@ tmle3_Spec_adapt <- R6Class(
     },
 
     get_rule = function(task, likelihood) {
-      return(as.numeric(self$Q(task[[2]], likelihood) - self$Q(task[[1]],
-                                                               likelihood) > 0))
+      return(as.numeric(self$Q(task[[2]], likelihood) - self$Q(
+        task[[1]],
+        likelihood
+      ) > 0))
     },
 
     get_blip_cf = function(tmle_task) {
@@ -170,7 +220,8 @@ tmle3_Spec_adapt <- R6Class(
       cf_tasks <- lapply(A_vals, function(A_val) {
         newdata <- data.table(A = A_val)
         cf_task <- tmle_task$generate_counterfactual_task(UUIDgenerate(),
-                                                          new_data = newdata)
+          new_data = newdata
+        )
         return(cf_task)
       })
       return(cf_tasks)
@@ -188,7 +239,8 @@ tmle3_Spec_adapt <- R6Class(
       cf_tasks <- lapply(A_vals, function(A_val) {
         newdata <- data.table(A = A_val)
         cf_task <- tmle_task$generate_counterfactual_task(UUIDgenerate(),
-                                                          new_data = newdata)
+          new_data = newdata
+        )
         return(cf_task)
       })
 
@@ -205,8 +257,10 @@ tmle3_Spec_adapt <- R6Class(
 
       # How to incorporate weights?
       lf_rule <- define_lf(LF_rule, "A", rule_fun = rA)
-      intervens <- Param_TSM$new(observed_likelihood = likelihood,
-                                 intervention_list = lf_rule)
+      intervens <- Param_TSM$new(
+        observed_likelihood = likelihood,
+        intervention_list = lf_rule
+      )
       # intervens <- Param_TSM_weight$new(observed_likelihood=likelihood,
       #                                 weight=weight,
       #                                intervention_list=lf_rule)
