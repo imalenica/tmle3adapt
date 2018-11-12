@@ -1,5 +1,5 @@
 #' Adaptively learns the Mean under the Optimal Individualized Treatment Rule or
-#' the Average Treatmen Effect in a sequential trial, possibly by finding an
+#' the Average Treatment Effect in a sequential trial, possibly by finding an
 #' optimal surrogate outcome.
 #'
 #' @importFrom R6 R6Class
@@ -13,18 +13,19 @@ tmle3_Spec_adapt <- R6Class(
   inherit = tmle3_Spec,
   public = list(
     initialize = function(surrogate = TRUE, S = NULL, V = NULL, learners,
-                              param = "opt", training_size, test_size, mini_batch,
-                              Gexploit = 0.1, Gexplore = 0.05, ...) {
+                          param = "opt", training_size, test_size, mini_batch,
+                          Gexploit = 0.1, Gexplore = 0.05, ...) {
       options <- list(
         S = S, V = V, param = param, learners = learners,
         training_size = training_size, test_size = test_size,
-        mini_batch = mini_batch, Gexploit = Gexploit, Gexplore = Gexplore
+        mini_batch = mini_batch, Gexploit = Gexploit, Gexplore = Gexplore,
+        ...
       )
       do.call(super$initialize, options)
     },
 
-    new_Gstar = function(gen_data = NULL, gen_data_adapt = NULL, W = NULL, by, node_list,
-                             initial_likelihood) {
+    new_Gstar = function(gen_data = NULL, gen_data_adapt = NULL, W = NULL, by,
+                         node_list, initial_likelihood) {
       if (is.null(gen_data) & is.null(gen_data_adapt) & is.null(W)) {
         stop("Either gen_data and gen_data_adapt must be specified, or W.")
       }
@@ -63,7 +64,8 @@ tmle3_Spec_adapt <- R6Class(
       sur_sl <- tmle_spec$get_sur_sl
       covariates <- c(names(inter[, -"Y"]))
 
-      sur_tmle_task <- make_sl3_Task(inter, covariates = covariates, outcome = "Y")
+      sur_tmle_task <- make_sl3_Task(inter, covariates = covariates,
+                                     outcome = "Y")
       S_pred <- sur_sl$predict(sur_tmle_task)
 
       inter$Y <- S_pred
@@ -84,8 +86,9 @@ tmle3_Spec_adapt <- R6Class(
         learner_list
       )
       opt <- Optimal_Surrogate$new(
-        S = self$get_S, V = self$get_V, learners = self$get_learners, param = self$get_param,
-        tmle_task = tmle_task_new, likelihood = initial_likelihood
+        S = self$get_S, V = self$get_V, learners = self$get_learners,
+        param = self$get_param, tmle_task = tmle_task_new,
+        likelihood = initial_likelihood
       )
 
       Starg_pred <- opt$surrogate_TSL(S_pred = S_pred)
@@ -352,15 +355,17 @@ tmle3_Spec_adapt <- R6Class(
 #'  per each iteration of the online Super Learner.
 #' @param Gexploit Sequence t_n. Default is 0.1.
 #' @param Gexplore Sequence e_n. Default is 0.05.
+#' @param ... Extra arguments passed to the constructor of the superclass.
 #'
 #' @export
 #
 tmle3_adapt <- function(surrogate = TRUE, S = NULL, V = NULL, learners,
                         param = "opt", training_size, test_size, mini_batch,
-                        Gexploit = 0.1, Gexplore = 0.05) {
+                        Gexploit = 0.1, Gexplore = 0.05, ...) {
   tmle3_Spec_adapt$new(
     surrogate = surrogate, S = S, V = V, learners = learners, param = param,
     training_size = training_size, test_size = test_size,
-    mini_batch = mini_batch, Gexploit = Gexploit, Gexplore = Gexplore
+    mini_batch = mini_batch, Gexploit = Gexploit, Gexplore = Gexplore,
+    ...
   )
 }

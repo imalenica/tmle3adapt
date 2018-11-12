@@ -8,7 +8,7 @@ optimal surrogate outcome.}
 \usage{
 tmle3_adapt(surrogate = TRUE, S = NULL, V = NULL, learners,
   param = "opt", training_size, test_size, mini_batch, Gexploit = 0.1,
-  Gexplore = 0.05)
+  Gexplore = 0.05, ...)
 }
 \arguments{
 \item{surrogate}{\code{TRUE} if performing surrogate estimation.}
@@ -35,6 +35,8 @@ per each iteration of the online Super Learner.}
 \item{Gexploit}{Sequence t_n. Default is 0.1.}
 
 \item{Gexplore}{Sequence e_n. Default is 0.05.}
+
+\item{...}{Extra arguments passed to the constructor of the superclass.}
 }
 \description{
 O=(W,A,S,Y)

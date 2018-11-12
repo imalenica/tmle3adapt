@@ -7,7 +7,7 @@ Mean Under the Optimal Individualized Rule and Average Treatment Effect
 target parameters.}
 \usage{
 tmle3_surrogate(S, V = NULL, learners, param = "opt",
-  training_size = NULL, test_size = NULL, mini_batch = NULL)
+  training_size = NULL, test_size = NULL, mini_batch = NULL, ...)
 }
 \arguments{
 \item{S}{Covariates to consider for the Optimal Surrogate estimation.}
@@ -16,15 +16,18 @@ tmle3_surrogate(S, V = NULL, learners, param = "opt",
 
 \item{learners}{List of learners used for Q,g,S and B.}
 
-\item{param}{Target parameter. Current implementation supports Mean under the Optimal Individualized
-Treatment (opt) and Average Treatment Effect (are)}
+\item{param}{Target parameter. Current implementation supports Mean under the
+Optimal Individualized Treatment (opt) and Average Treatment Effect (are)}
 
-\item{training_size}{Size of the initial training set. Necessary part of online Super Learner.}
+\item{training_size}{Size of the initial training set. Necessary part of
+online Super Learner.}
 
 \item{test_size}{Size of the test set. Necessary part of online Super Learner.}
 
-\item{mini_batch}{Size of the increase in the initial training size, added per each iteration of the
-online Super Learner.}
+\item{mini_batch}{Size of the increase in the initial training size, added
+per each iteration of the online Super Learner.}
+
+\item{...}{Additional arguments passed to the constructor of the superclass.}
 }
 \description{
 O=(W,A,S,Y)

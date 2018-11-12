@@ -35,6 +35,8 @@
 #'  simulations.
 #' @param gen_data_adapt Data generating distribution of the process with
 #'  user-specifed rule. Used for simulations.
+#' @param ... Additional arguments passed to the constructor of the \code{R6}
+#'  class \code{tmle3_surrogate}.
 #'
 #' @importFrom tmle3 fit_tmle3
 #'
@@ -50,7 +52,8 @@ tmle3_sadapt <- function(surrogate = TRUE, S = S,
                          training_size = 100, test_size = 20, mini_batch = 25,
                          Gexploit = 0.1, Gexplore = 0.01,
                          n_max = 1600, by = 200, n = nrow(data),
-                         gen_data = gen_data, gen_data_adapt = gen_data_adapt) {
+                         gen_data = gen_data, gen_data_adapt = gen_data_adapt,
+                         ...) {
   if (surrogate) {
     # Define spec:
     tmle_spec <- tmle3_surrogate(
@@ -60,7 +63,8 @@ tmle3_sadapt <- function(surrogate = TRUE, S = S,
       param = param,
       training_size = training_size,
       test_size = test_size,
-      mini_batch = mini_batch
+      mini_batch = mini_batch,
+      ...
     )
 
     # Define nodes:
@@ -86,7 +90,8 @@ tmle3_sadapt <- function(surrogate = TRUE, S = S,
       test_size = test_size,
       mini_batch = mini_batch,
       Gexploit = Gexploit,
-      Gexplore = Gexplore
+      Gexplore = Gexplore,
+      ...
     )
 
     tmle_task <- tmle_spec_adapt$make_tmle_task(data = data, node_list)
