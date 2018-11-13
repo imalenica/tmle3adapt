@@ -24,6 +24,7 @@ psi <- mean(data_full_rho0.2$Yd0)
 xgboost_50 <- Lrnr_xgboost$new(nrounds = 50)
 xgboost_100 <- Lrnr_xgboost$new(nrounds = 100)
 xgboost_300 <- Lrnr_xgboost$new(nrounds = 300)
+xgboost_500 <- Lrnr_xgboost$new(nrounds = 500)
 glmnet_0.2 <- Lrnr_glmnet$new(alpha = 0.2, lambda = 300)
 glmnet_0.6 <- Lrnr_glmnet$new(alpha = 0.6, lambda = 300)
 glmnet_0.8 <- Lrnr_glmnet$new(alpha = 0.8, lambda = 300)
@@ -33,8 +34,8 @@ lrn2 <- Lrnr_glm_fast$new()
 lrn3 <- Lrnr_hal9001$new(degrees = 3, n_folds = 3)
 
 Q_learner <- Lrnr_sl$new(
-  #learners = list(xgboost_50,xgboost_100,glmnet_0.2,glmnet_0.8,lrn2),
-  learners = list(glmnet_0.8, lrn1, lrn2, lrn3),
+  learners = list(xgboost_300, glmnet_0.8,lrn2, lrn3),
+  #learners = list(xgboost_300, xgboost_500, glmnet_0.8, lrn1, lrn2, lrn3),
   metalearner = Lrnr_nnls$new()
 )
 
@@ -49,7 +50,8 @@ b_learner <- Lrnr_sl$new(
 )
 
 s_learner <- Lrnr_sl$new(
-  learners = list(xgboost_50, xgboost_100, glmnet_0.2, glmnet_0.8, lrn2),
+  learners = list(xgboost_300, glmnet_0.8,lrn2, lrn3),
+  #learners = list(xgboost_50, xgboost_100, xgboost_300, xgboost_500,glmnet_0.2, glmnet_0.8, lrn2, lrn3),
   metalearner = Lrnr_nnls$new()
 )
 
@@ -71,6 +73,8 @@ n_max = 1600
 by = 200
 n = 1000
 rho=0.2
+rule_outcome="Y"
+opt_surrogate="SL"
 source(here("sandbox/Generate_DGD_1b.R"))
 source(here("sandbox/simulation_1b/tmle3_adapt_sim1b.R"))
 

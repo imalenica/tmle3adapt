@@ -19,7 +19,8 @@ tmle3_sadapt_sim1b <- function(surrogate = FALSE,
                                gen_data = gen_data,
                                gen_data_adapt = gen_data_adapt,
                                gen_data_adapt_truth = gen_data_adapt_truth,
-                               rho = rho) {
+                               rho = rho, rule_outcome=rule_outcome,
+                               opt_surrogate=opt_surrogate) {
   if (surrogate) {
     
     ## Learn the optimal surrogate:
@@ -27,7 +28,9 @@ tmle3_sadapt_sim1b <- function(surrogate = FALSE,
       S = S,
       V = V,
       learners = learner_list,
-      param = param
+      param = param, 
+      opt_surrogate="SL",
+      rule_outcome=rule_outcome
     )
 
     # Define nodes:
@@ -36,12 +39,13 @@ tmle3_sadapt_sim1b <- function(surrogate = FALSE,
     # Define data:
     tmle_task <- tmle_spec$make_tmle_task(data, node_list)
 
-    # Define likelihood:
+    # Define likelihood: (only need P(A=1|W))
+    #Estimates:
+    #E(Y|A,W), P(A=1|W), P(W)
     initial_likelihood <- tmle_spec$make_initial_likelihood(tmle_task,
                                                             learner_list)
     data <- tmle_spec$make_params(tmle_task, initial_likelihood)
 
-    # Define spec:
     tmle_spec_adapt <- tmle3_adapt(
       S = S,
       V = V,
@@ -56,6 +60,9 @@ tmle3_sadapt_sim1b <- function(surrogate = FALSE,
 
     tmle_task <- tmle_spec_adapt$make_tmle_task(data = data, node_list)
 
+    #COMPUTATIONAL: Can borrow from prior spec?
+    #Estimates:
+    #E(Y_s|A,W), P(A=1|W)
     initial_likelihood <- tmle_spec_adapt$make_initial_likelihood(tmle_task,
                                                                   learner_list)
     updater <- tmle_spec_adapt$make_updater()
@@ -96,9 +103,9 @@ tmle3_sadapt_sim1b <- function(surrogate = FALSE,
       n <- n + by
     }
     
-    fit <- fit_tmle3(tmle_task, targeted_likelihood, tmle_params, updater)
+     fit <- fit_tmle3(tmle_task, targeted_likelihood, tmle_params, updater)
     
-  } else if(!surrogate) {
+   } else if(!surrogate) {
     
     # Define spec:
     tmle_spec_adapt <- tmle3_adapt(

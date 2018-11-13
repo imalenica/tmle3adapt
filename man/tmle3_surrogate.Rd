@@ -7,7 +7,8 @@ Mean Under the Optimal Individualized Rule and Average Treatment Effect
 target parameters.}
 \usage{
 tmle3_surrogate(S, V = NULL, learners, param = "opt",
-  training_size = NULL, test_size = NULL, mini_batch = NULL)
+  training_size = NULL, test_size = NULL, mini_batch = NULL,
+  rule_outcome = "S", opt_surrogate = "SL")
 }
 \arguments{
 \item{S}{Covariates to consider for the Optimal Surrogate estimation.}
@@ -25,6 +26,9 @@ Treatment (opt) and Average Treatment Effect (are)}
 
 \item{mini_batch}{Size of the increase in the initial training size, added per each iteration of the
 online Super Learner.}
+
+\item{opt_surrogate}{Optimal Surrogate can be based on the Super Learner prediction ("SL"), or
+targeted Super Learner ("TMLE").}
 }
 \description{
 O=(W,A,S,Y)
