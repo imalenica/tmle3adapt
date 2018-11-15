@@ -6,13 +6,14 @@
 #'
 #' @export
 #
+
 tmle3_Spec_adapt <- R6Class(
   classname = "tmle3_Spec_adapt",
   portable = TRUE,
   class = TRUE,
   inherit = tmle3_Spec,
   public = list(
-    initialize = function(surrogate = TRUE, S = NULL, V = NULL, learners,
+    initialize = function(S = NULL, V = NULL, learners,
                               param = "opt", training_size, test_size, mini_batch,
                               Gexploit = 0.1, Gexplore = 0.05, ...) {
       options <- list(
@@ -392,7 +393,6 @@ tmle3_Spec_adapt <- R6Class(
 #' S=Potential Surrogates
 #' Y=Outcome (binary or bounded continuous)
 #'
-#' @param surrogate \code{TRUE} if performing surrogate estimation.
 #' @param S Covariates to consider for the Optimal Surrogate estimation. Leave
 #'  empty if no surrogate is used.
 #' @param learners List of learners used for Q,g,S and B.
@@ -410,11 +410,10 @@ tmle3_Spec_adapt <- R6Class(
 #'
 #' @export
 #
-tmle3_adapt <- function(surrogate = TRUE, S = NULL, V = NULL, learners,
+tmle3_adapt <- function(S = NULL, V = NULL, learners,
                         param = "opt", training_size, test_size, mini_batch,
                         Gexploit = 0.1, Gexplore = 0.05) {
-  tmle3_Spec_adapt$new(
-    surrogate = surrogate, S = S, V = V, learners = learners, param = param,
+  tmle3_Spec_adapt$new(S = S, V = V, learners = learners, param = param,
     training_size = training_size, test_size = test_size,
     mini_batch = mini_batch, Gexploit = Gexploit, Gexplore = Gexplore
   )
