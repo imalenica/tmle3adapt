@@ -29,7 +29,7 @@ tmle3_sadapt_sim1b <- function(surrogate = FALSE,
       V = V,
       learners = learner_list,
       param = param, 
-      opt_surrogate="SL",
+      opt_surrogate=opt_surrogate,
       rule_outcome=rule_outcome
     )
 
@@ -70,7 +70,7 @@ tmle3_sadapt_sim1b <- function(surrogate = FALSE,
       tmle_spec_adapt$make_targeted_likelihood(initial_likelihood, updater)
     tmle_params <- tmle_spec_adapt$make_params(tmle_task, targeted_likelihood)
 
-    #fit <- fit_tmle3(tmle_task, targeted_likelihood, tmle_params, updater)
+    fit <- fit_tmle3(tmle_task, targeted_likelihood, tmle_params, updater)
 
     #Data-adaptive param:
     #data_new<-gen_data(n = 50000)
@@ -87,23 +87,13 @@ tmle3_sadapt_sim1b <- function(surrogate = FALSE,
       #Returns old and new (targeted) data, with outcome being the surrogate as learned previously
       data<-tmle_spec_adapt$new_data(inter=data_targ,old_data=data, 
                                      tmle_spec=tmle_spec, node_list=node_list)
-
-      tmle_task <- tmle_spec_adapt$make_tmle_task(data, node_list)
-
-      # Define a new likelihood:
-      initial_likelihood <-
-        tmle_spec_adapt$make_initial_likelihood(tmle_task, learner_list)
-      updater <- tmle_spec_adapt$make_updater()
-      targeted_likelihood <-
-        tmle_spec_adapt$make_targeted_likelihood(initial_likelihood, updater)
-
-      tmle_params <- c(tmle_params,
-                       tmle_spec_adapt$make_params(tmle_task,
-                                                   targeted_likelihood))
+      
+      fit <- c(fit,tmle3(tmle_spec_adapt, data, node_list, learner_list))
+      
       n <- n + by
     }
     
-     fit <- fit_tmle3(tmle_task, targeted_likelihood, tmle_params, updater)
+    summary <- do.call(rbind, lapply(fit, function(x) x$summary))
     
    } else if(!surrogate) {
     
@@ -129,24 +119,20 @@ tmle3_sadapt_sim1b <- function(surrogate = FALSE,
     updater <- tmle_spec_adapt$make_updater()
     targeted_likelihood <- tmle_spec_adapt$make_targeted_likelihood(initial_likelihood, updater)
     tmle_params <- tmle_spec_adapt$make_params(tmle_task, targeted_likelihood)
-
-    while (n <= n_max) {
-      data_new <- tmle_spec_adapt$new_Gstar(gen_data, gen_data_adapt, by, old_data,
-                                        node_list,initial_likelihood)
-      data<-rbind.data.frame(data,data_new)
-      tmle_task <- tmle_spec_adapt$make_tmle_task(data, node_list)
-
-      # Define a new likelihood:
-      initial_likelihood <- tmle_spec_adapt$make_initial_likelihood(tmle_task, learner_list)
-      updater <- tmle_spec_adapt$make_updater()
-      targeted_likelihood <- tmle_spec_adapt$make_targeted_likelihood(initial_likelihood, updater)
-
-      tmle_params <- c(tmle_params, tmle_spec_adapt$make_params(tmle_task,
-                                                                 targeted_likelihood))
-      n <- n + by
-    }
     
     fit <- fit_tmle3(tmle_task, targeted_likelihood, tmle_params, updater)
+
+    while (n <= n_max) {
+      data_new <- tmle_spec_adapt$new_Gstar(gen_data, gen_data_adapt, W = NULL, by=by, 
+                                            node_list,initial_likelihood)
+      data<-rbind.data.frame(data,data_new)
+      
+      fit <- c(fit,tmle3(tmle_spec_adapt, data, node_list, learner_list))
+      
+      n <- n + by
+    }
+
+    summary <- do.call(rbind, lapply(fit, function(x) x$summary))
   }
   
   return(fit)

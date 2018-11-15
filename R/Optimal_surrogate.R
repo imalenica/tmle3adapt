@@ -15,7 +15,7 @@ Optimal_Surrogate <- R6Class(
   lock_objects = FALSE,
   public = list(
     initialize = function(S, V = NULL, learners, param = "opt", tmle_task, likelihood,
-                              rule_outcome="S", ...) {
+                              rule_outcome = "S", ...) {
       private$.S <- S
       private$.V <- V
       private$.learners <- learners
@@ -33,8 +33,8 @@ Optimal_Surrogate <- R6Class(
 
     Q = function(task) {
       Q_sl <- self$get_Q_sl
-      Q_pred<-Q_sl$predict(task)
-      Q_pred<-self$bound(Q_pred)
+      Q_pred <- Q_sl$predict(task)
+      Q_pred <- self$bound(Q_pred)
       return(Q_pred)
     },
 
@@ -65,135 +65,132 @@ Optimal_Surrogate <- R6Class(
 
     # Targeted SuperLearner of the surrogate:
     surrogate_TSL = function(S_pred) {
-      
       param <- self$get_param
       tmle_task <- self$tmle_task
       initial_likelihood <- self$likelihood
       rule_outcome <- self$get_rule_outcome
 
       if (param == "opt") {
-        
+
         ### Q: It seems we might be losing some info here.
-        #      The rule is being learned w.r.t. surrogate, without targeting 
+        #      The rule is being learned w.r.t. surrogate, without targeting
         #      the surrogate to be "optimal" w.r.t. the blip.
 
         # Simple rule learning:
         data <- tmle_task$get_data()
-        
-        if(rule_outcome == "S"){
-          
+
+        if (rule_outcome == "S") {
+
           ### We update w.r.t. actual Y
           ### Rule is learned w.r.t. Surrogate.
-          
-          Y_orig<-data$Y
-          
+
+          Y_orig <- data$Y
+
           data$Y <- S_pred
-          
+
           A <- data$A
           Y <- data$Y
           S <- self$get_S
           SY <- c(S, "Y")
-          
+
           # NOTE: To estimate the rule, we should use only A and W, not S
           # this is so it matches later rule fitting
-          covariates <- c(names(data[, !SY, with=FALSE]))
+          covariates <- c(names(data[, !SY, with = FALSE]))
           Q_tmle_task <- make_sl3_Task(data, covariates = covariates, outcome = "Y")
-          
+
           Q_learner <- self$get_Q_learner
           Q_sl <- Q_learner$train(Q_tmle_task)
           Q_est <- Q_sl$predict()
           Q_est <- self$bound(Q_est)
           private$Q_sl <- Q_sl
-          
+
           A_vals <- tmle_task$npsem$A$variable_type$levels
-          
+
           # Generate counterfactual tasks for each value of A:
           cf_tasks <- lapply(A_vals, function(A_val) {
             newdata <- data
             newdata$A <- A_val
             cf_task <- make_sl3_Task(newdata,
-                                     covariates = covariates,
-                                     outcome = "Y"
+              covariates = covariates,
+              outcome = "Y"
             )
             return(cf_task)
           })
-          
+
           # Learn the rule:
-          #Rule based on E(S|W,A=1)-E(S|W,A=0)
+          # Rule based on E(S|W,A=1)-E(S|W,A=0)
           dn <- self$get_rule(cf_tasks)
-          
+
           # Get the estimated g:
           # NOTE: This should match the gn we use later in the clever covariate of the adaptive part!
           g.ests <- initial_likelihood$get_likelihood(tmle_task = tmle_task, node = "A")
           g.ests[A == 0] <- 1 - g.ests[A == 0]
           g.ests <- self$bound(g.ests)
-          
+
           # Clever covariate and fluctuation:
           HA <- as.numeric(A == dn) / g.ests
           eps <- coef(glm(Y_orig ~ -1 + HA, offset = qlogis(S_pred), family = "quasibinomial"))
-          private$.eps=eps
-          
+          private$.eps <- eps
+
           # Update:
           Q.star <- plogis(qlogis(S_pred) + HA * eps)
           Q.star <- self$bound(Q.star)
-          
-        }else if(rule_outcome == "Y"){
-          
+        } else if (rule_outcome == "Y") {
+
           ### We update w.r.t. actual Y
           ### Rule is learned w.r.t. Y.
-          
-          Y_orig<-data$Y
-          
-          #data$Y <- S_pred
-          
+
+          Y_orig <- data$Y
+
+          # data$Y <- S_pred
+
           A <- data$A
           Y <- data$Y
           S <- self$get_S
           SY <- c(S, "Y")
-          
+
           # NOTE: To estimate the rule, we should use only A and W, not S
           # this is so it matches later rule fitting.
-          covariates <- c(names(data[, !SY, with=FALSE]))
+          covariates <- c(names(data[, !SY, with = FALSE]))
           Q_tmle_task <- make_sl3_Task(data, covariates = covariates, outcome = "Y")
-          
+
           Q_learner <- self$get_Q_learner
           Q_sl <- Q_learner$train(Q_tmle_task)
           Q_est <- Q_sl$predict()
           Q_est <- self$bound(Q_est)
           private$Q_sl <- Q_sl
-          
+
           A_vals <- tmle_task$npsem$A$variable_type$levels
-          
+
           # Generate counterfactual tasks for each value of A:
           cf_tasks <- lapply(A_vals, function(A_val) {
             newdata <- data
             newdata$A <- A_val
             cf_task <- make_sl3_Task(newdata,
-                                     covariates = covariates,
-                                     outcome = "Y"
+              covariates = covariates,
+              outcome = "Y"
             )
             return(cf_task)
           })
-          
+
           # Learn the rule:
-          #Rule based on E(S|W,A=1)-E(S|W,A=0)
+          # Rule based on E(S|W,A=1)-E(S|W,A=0)
           dn <- self$get_rule(cf_tasks)
-          
+
           # Get the estimated g:
           # NOTE: This should match the gn we use later in the clever covariate of the adaptive part!
           g.ests <- initial_likelihood$get_likelihood(tmle_task = tmle_task, node = "A")
           g.ests[A == 0] <- 1 - g.ests[A == 0]
           g.ests <- self$bound(g.ests)
-          
+
           # Clever covariate and fluctuation:
           HA <- as.numeric(A == dn) / g.ests
           eps <- coef(glm(Y_orig ~ -1 + HA, offset = qlogis(S_pred), family = "quasibinomial"))
-          private$.eps=eps
-          
+          private$.eps <- eps
+
           # Update:
           Q.star <- plogis(qlogis(S_pred) + HA * eps)
           Q.star <- self$bound(Q.star)
-          
         }
 
         # Use tmle3mopptx to get the rule:
@@ -312,6 +309,6 @@ Optimal_Surrogate <- R6Class(
     .tmle_task = list(),
     .likelihood = list(),
     .rule_outcome = NULL,
-    .eps=NULL
+    .eps = NULL
   )
 )

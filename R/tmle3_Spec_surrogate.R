@@ -16,12 +16,12 @@ tmle3_Spec_surrogate <- R6Class(
     # TO DO: Should we learn the initial estimates using Online Learning?
     # Theoretically, no need
     initialize = function(S, V = NULL, learners, param = "opt",
-                              training_size = NULL, test_size = NULL, mini_batch = NULL, 
-                          rule_outcome="S", opt_surrogate="SL", ...) {
+                              training_size = NULL, test_size = NULL, mini_batch = NULL,
+                              rule_outcome = "S", opt_surrogate = "SL", ...) {
       options <- list(
-        S = S, V = V, param = param, learners = learners, rule_outcome=rule_outcome,
+        S = S, V = V, param = param, learners = learners, rule_outcome = rule_outcome,
         training_size = training_size, test_size = test_size, mini_batch = mini_batch,
-        opt_surrogate=opt_surrogate
+        opt_surrogate = opt_surrogate
       )
       do.call(super$initialize, options)
     },
@@ -84,47 +84,45 @@ tmle3_Spec_surrogate <- R6Class(
     },
 
     make_params = function(tmle_task, likelihood) {
-      
       S <- self$get_S
       V <- self$get_V
-      rule_outcome<-self$get_rule_outcome
+      rule_outcome <- self$get_rule_outcome
       learners <- self$get_learners
       param <- self$get_param
-      opt_surrogate<-self$opt_surrogate
+      opt_surrogate <- self$opt_surrogate
 
       opt <- Optimal_Surrogate$new(
         S = S, V = V, learners = learners, param = param,
-        tmle_task = tmle_task, likelihood = likelihood, rule_outcome=rule_outcome
+        tmle_task = tmle_task, likelihood = likelihood, rule_outcome = rule_outcome
       )
-  
-      if(opt_surrogate == "SL"){
-        
+
+      if (opt_surrogate == "SL") {
+
         ### Learn the SL optimal surrogate, and save the fit:
-        #E(Y|S,A,W)
+        # E(Y|S,A,W)
         S_pred <- opt$surrogate_SL()
         private$sur_sl <- opt$get_sur_sl
-        
+
         data <- tmle_task$get_data()
         data$Y <- S_pred
-        
-      }else if(opt_surrogate == "TMLE"){
-        
+      } else if (opt_surrogate == "TMLE") {
+
         ### Learn the SL optimal surrogate, and save the fit:
-        #E(Y|S,A,W)
+        # E(Y|S,A,W)
         S_pred <- opt$surrogate_SL()
         private$sur_sl <- opt$get_sur_sl
-        
+
         ### Target towards the parameter of interest:
-        #Save E(Y|A,W) or E(Y_S|A,W)
-        #Save corresponding epsilon
+        # Save E(Y|A,W) or E(Y_S|A,W)
+        # Save corresponding epsilon
         Starg_pred <- opt$surrogate_TSL(S_pred = S_pred)
         private$opt <- opt
         private$eps <- opt$get_eps
-        private$Q_sl <-opt$get_Q_sl
-        
+        private$Q_sl <- opt$get_Q_sl
+
         data <- tmle_task$get_data()
         data$Y <- Starg_pred
-      }else {
+      } else {
         stop("Optimal surrogate can be based on the Super Learner fit (surrogate = SL), 
              or targeted Super Learner fit (surrogate = TMLE).")
       }
@@ -182,10 +180,10 @@ tmle3_Spec_surrogate <- R6Class(
     get_opt = function() {
       return(private$opt)
     },
-    get_rule_outcome = function(){
+    get_rule_outcome = function() {
       return(private$.options$rule_outcome)
     },
-    get_eps = function(){
+    get_eps = function() {
       return(private$eps)
     }
   ),
@@ -224,11 +222,11 @@ tmle3_Spec_surrogate <- R6Class(
 #'
 
 tmle3_surrogate <- function(S, V = NULL, learners, param = "opt", training_size = NULL,
-                            test_size = NULL, mini_batch = NULL, rule_outcome="S",
-                            opt_surrogate="SL") {
+                            test_size = NULL, mini_batch = NULL, rule_outcome = "S",
+                            opt_surrogate = "SL") {
   tmle3_Spec_surrogate$new(
-    S = S, V = V, learners = learners, param = param, rule_outcome=rule_outcome,
+    S = S, V = V, learners = learners, param = param, rule_outcome = rule_outcome,
     training_size = training_size, test_size = test_size, mini_batch = mini_batch,
-    opt_surrogate=opt_surrogate
+    opt_surrogate = opt_surrogate
   )
 }

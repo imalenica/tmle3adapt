@@ -58,95 +58,93 @@ tmle3_Spec_adapt <- R6Class(
     # data from the last trial, and tmle_spec corresponding to
     # learning the optimal surrogate part.
     new_data = function(inter, old_data, tmle_spec, node_list) {
-
       opt_surrogate <- tmle_spec$opt_surrogate
       rule_outcome <- tmle_spec$get_rule_outcome
-      
-      if(opt_surrogate == "SL"){
-        
+
+      if (opt_surrogate == "SL") {
+
         ## SL step:
         sur_sl <- tmle_spec$get_sur_sl
         covariates <- c(names(inter[, -"Y"]))
-        
+
         sur_tmle_task <- make_sl3_Task(inter, covariates = covariates, outcome = "Y")
         S_pred <- sur_sl$predict(sur_tmle_task)
         S_pred <- self$bound(S_pred)
         inter$Y <- S_pred
-        
+
         # Combine:
         data <- rbind.data.frame(old_data, inter)
-        
-      }else if(opt_surrogate == "TMLE"){
-        
+      } else if (opt_surrogate == "TMLE") {
+
         ## SL step:
         sur_sl <- tmle_spec$get_sur_sl
         covariates <- c(names(inter[, -"Y"]))
-        
+
         sur_tmle_task <- make_sl3_Task(inter, covariates = covariates, outcome = "Y")
         S_pred <- sur_sl$predict(sur_tmle_task)
         S_pred <- self$bound(S_pred)
-        
+
         ## Targeting step:
         inter$Y <- S_pred
-        
+
         A <- inter$A
         Y <- inter$Y
         S <- self$get_S
         SY <- c(S, "Y")
         SYA <- c(S, "Y", "A")
-        
+
         # NOTE: To estimate the rule, we should use only A and W, not S
         # this is so it matches later rule fitting
-        # *Based on originally learned E(Y_s|A,W) (just SL surrogate!)
-        covariates <- c(names(data[, !SY, with=FALSE]))
+        # *Based on originally learned E(Y_s|A,W) (just SL surrogate!) or E(Y|A,W)
+        covariates <- c(names(data[, !SY, with = FALSE]))
         Q_tmle_task <- make_sl3_Task(inter, covariates = covariates, outcome = "Y")
-        
+
         Q_sl <- tmle_spec$get_Q_sl
         Q_est <- Q_sl$predict(Q_tmle_task)
         Q_est <- self$bound(Q_est)
-        
+
         A_vals <- unique(inter$A)
-        
+
         # Generate counterfactual tasks for each value of A:
         cf_tasks <- lapply(A_vals, function(A_val) {
           newdata <- inter
           newdata$A <- A_val
           cf_task <- make_sl3_Task(newdata,
-                                   covariates = covariates,
-                                   outcome = "Y"
+            covariates = covariates,
+            outcome = "Y"
           )
           return(cf_task)
         })
-        
+
         # Learn the rule:
-        #Rule based on E(Y_S|W,A=1)-E(Y_S|W,A=0) (original SL surrogate)
-        dn <- as.numeric(Q_sl$predict(cf_tasks[[2]])-Q_sl$predict(cf_tasks[[1]])>0)
-        
-        ##Learned a new gn (with more data):
-        temp <- rbind.data.frame(old_data,inter)
-        covariates <- c(names(temp[, !SYA, with=FALSE]))
+        # Rule based on E(Y_S|W,A=1)-E(Y_S|W,A=0) (original SL surrogate)
+        dn <- as.numeric(Q_sl$predict(cf_tasks[[2]]) - Q_sl$predict(cf_tasks[[1]]) > 0)
+
+        ## Learned a new gn (with more data):
+        temp <- rbind.data.frame(old_data, inter)
+        covariates <- c(names(temp[, !SYA, with = FALSE]))
         g_tmle_task <- make_sl3_Task(temp, covariates = covariates, outcome = "A")
         g_tmle_inter <- make_sl3_Task(inter, covariates = covariates, outcome = "A")
-        
+
         g_sl <- tmle_spec$get_learners$A
         g_sl <- g_sl$train(g_tmle_task)
         g_est <- g_sl$predict(g_tmle_inter)
         g_est <- self$bound(g_est)
         g_est[A == 0] <- 1 - g_est[A == 0]
-        
+
         # Clever covariate and fluctuation:
         HA <- as.numeric(A == dn) / g_est
         eps <- tmle_spec$get_eps
-        #eps <- coef(glm(Y_orig ~ -1 + HA, offset = qlogis(S_pred), family = "quasibinomial"))
-        
+        # eps <- coef(glm(Y_orig ~ -1 + HA, offset = qlogis(S_pred), family = "quasibinomial"))
+
         # Update:
         Q.star <- plogis(qlogis(S_pred) + HA * eps)
         Q.star <- self$bound(Q.star)
         inter$Y <- Q.star
-        
+
         # Combine:
         data <- rbind.data.frame(old_data, inter)
-      }else {
+      } else {
         stop("Optimal surrogate can be based on the Super Learner fit (surrogate = SL), 
              or targeted Super Learner fit (surrogate = TMLE).")
       }
@@ -206,7 +204,7 @@ tmle3_Spec_adapt <- R6Class(
       return(tmle_task)
     },
     make_updater = function() {
-      #updater <- tmle3_Update$new()
+      # updater <- tmle3_Update$new()
       updater <- tmle3_Update_adapt$new()
     },
 
@@ -310,18 +308,17 @@ tmle3_Spec_adapt <- R6Class(
       weight <- self$get_weight(G_ref, GstarW, A)
 
       # Learn the rule:
-      # NOTE: If Surroagte analaysis, the rule is based on S, so E(S|W,A=1)-E(S|W,A=0)
+      # NOTE: If Surroagte analysis, the rule is based on S, so E(S|W,A=1)-E(S|W,A=0)
       rA <- self$get_rule(task = cf_tasks, likelihood)
 
       # How to incorporate weights?
       lf_rule <- define_lf(LF_rule, "A", rule_fun = rA)
-      intervens <- Param_TSM$new(
+
+      intervens <- Param_TSM_weight$new(
         observed_likelihood = likelihood,
+        weight = weight,
         intervention_list = lf_rule
       )
-      # intervens <- Param_TSM_weight$new(observed_likelihood=likelihood,
-      #                                 weight=weight,
-      #                                intervention_list=lf_rule)
 
       return(intervens)
     }
