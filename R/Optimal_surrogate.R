@@ -31,6 +31,27 @@ Optimal_Surrogate <- R6Class(
       return(g)
     },
 
+    rescale = function(Y) {
+      private$.minY <- min(Y)
+      private$.maxY <- max(Y)
+
+      rescaleY <- (Y - min(Y)) / (max(Y) - min(Y))
+      return(rescaleY)
+    },
+
+    revert = function(Y) {
+      minY <- self$get_minY
+      maxY <- self$get_maxY
+
+      revertY <- Y * (maxY - minY) + minY
+      return(revertY)
+    },
+
+    get_W = function(data) {
+      W <- names(data)[grep("W", names(data))]
+      return(W)
+    },
+
     Q = function(task) {
       Q_sl <- self$get_Q_sl
       Q_pred <- Q_sl$predict(task)
@@ -49,16 +70,19 @@ Optimal_Surrogate <- R6Class(
       data <- tmle_task$get_data()
       S_learner <- self$get_S_learner
       S <- self$get_S
-      # folds<-tmle_task$folds
+      W <- self$get_W(data = data)
 
-      covariates <- c(names(data[, -"Y"]))
+      covariates <- c(W, S, "A")
 
       sur_tmle_task <- make_sl3_Task(data, covariates = covariates, outcome = "Y")
       sur_sl <- S_learner$train(sur_tmle_task)
 
       S_pred <- sur_sl$predict()
-      S_pred <- self$bound(S_pred)
       private$sur_sl <- sur_sl
+
+      if (tmle_task$npsem$Y$variable_type$type != "continuous") {
+        S_pred <- self$bound(S_pred)
+      }
 
       return(S_pred)
     },
@@ -91,17 +115,26 @@ Optimal_Surrogate <- R6Class(
           A <- data$A
           Y <- data$Y
           S <- self$get_S
-          SY <- c(S, "Y")
+          W <- self$get_W(data = data)
 
           # NOTE: To estimate the rule, we should use only A and W, not S
           # this is so it matches later rule fitting
-          covariates <- c(names(data[, !SY, with = FALSE]))
+          covariates <- c(W, "A")
           Q_tmle_task <- make_sl3_Task(data, covariates = covariates, outcome = "Y")
 
           Q_learner <- self$get_Q_learner
           Q_sl <- Q_learner$train(Q_tmle_task)
           Q_est <- Q_sl$predict()
-          Q_est <- self$bound(Q_est)
+
+          if (tmle_task$npsem$Y$variable_type$type != "continuous") {
+            Q_est <- self$bound(Q_est)
+          } else if (tmle_task$npsem$Y$variable_type$type == "continuous") {
+            Y_orig <- self$rescale(Y_orig)
+            Y_orig <- self$bound(Y_orig)
+            S_pred <- self$rescale(S_pred)
+            S_pred <- self$bound(S_pred)
+          }
+
           private$Q_sl <- Q_sl
 
           A_vals <- tmle_task$npsem$A$variable_type$levels
@@ -134,7 +167,12 @@ Optimal_Surrogate <- R6Class(
 
           # Update:
           Q.star <- plogis(qlogis(S_pred) + HA * eps)
-          Q.star <- self$bound(Q.star)
+
+          if (tmle_task$npsem$Y$variable_type$type != "continuous") {
+            Q.star <- self$bound(Q.star)
+          } else if (tmle_task$npsem$Y$variable_type$type == "continuous") {
+            Q.star <- self$revert(Q.star)
+          }
         } else if (rule_outcome == "Y") {
 
           ### We update w.r.t. actual Y
@@ -147,17 +185,26 @@ Optimal_Surrogate <- R6Class(
           A <- data$A
           Y <- data$Y
           S <- self$get_S
-          SY <- c(S, "Y")
+          W <- self$get_W(data = data)
 
           # NOTE: To estimate the rule, we should use only A and W, not S
           # this is so it matches later rule fitting.
-          covariates <- c(names(data[, !SY, with = FALSE]))
+          covariates <- c(W, "A")
           Q_tmle_task <- make_sl3_Task(data, covariates = covariates, outcome = "Y")
 
           Q_learner <- self$get_Q_learner
           Q_sl <- Q_learner$train(Q_tmle_task)
           Q_est <- Q_sl$predict()
-          Q_est <- self$bound(Q_est)
+
+          if (tmle_task$npsem$Y$variable_type$type != "continuous") {
+            Q_est <- self$bound(Q_est)
+          } else if (tmle_task$npsem$Y$variable_type$type == "continuous") {
+            Y_orig <- self$rescale(Y_orig)
+            Y_orig <- self$bound(Y_orig)
+            S_pred <- self$rescale(S_pred)
+            S_pred <- self$bound(S_pred)
+          }
+
           private$Q_sl <- Q_sl
 
           A_vals <- tmle_task$npsem$A$variable_type$levels
@@ -190,7 +237,12 @@ Optimal_Surrogate <- R6Class(
 
           # Update:
           Q.star <- plogis(qlogis(S_pred) + HA * eps)
-          Q.star <- self$bound(Q.star)
+
+          if (tmle_task$npsem$Y$variable_type$type != "continuous") {
+            Q.star <- self$bound(Q.star)
+          } else if (tmle_task$npsem$Y$variable_type$type == "continuous") {
+            Q.star <- self$revert(Q.star)
+          }
         }
 
         # Use tmle3mopptx to get the rule:
@@ -297,6 +349,12 @@ Optimal_Surrogate <- R6Class(
     },
     get_rule_outcome = function() {
       return(private$.rule_outcome)
+    },
+    get_minY = function() {
+      return(private$.minY)
+    },
+    get_maxY = function() {
+      return(private$.maxY)
     }
   ),
   private = list(
@@ -309,6 +367,8 @@ Optimal_Surrogate <- R6Class(
     .tmle_task = list(),
     .likelihood = list(),
     .rule_outcome = NULL,
-    .eps = NULL
+    .eps = NULL,
+    .minY = NULL,
+    .maxY = NULL
   )
 )

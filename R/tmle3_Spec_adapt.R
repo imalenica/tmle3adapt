@@ -11,6 +11,7 @@ tmle3_Spec_adapt <- R6Class(
   classname = "tmle3_Spec_adapt",
   portable = TRUE,
   class = TRUE,
+  lock_objects = FALSE,
   inherit = tmle3_Spec,
   public = list(
     initialize = function(S = NULL, V = NULL, learners,
@@ -22,6 +23,11 @@ tmle3_Spec_adapt <- R6Class(
         mini_batch = mini_batch, Gexploit = Gexploit, Gexplore = Gexplore
       )
       do.call(super$initialize, options)
+    },
+
+    get_W = function(data) {
+      W <- names(data)[grep("W", names(data))]
+      return(W)
     },
 
     new_Gstar = function(gen_data = NULL, gen_data_adapt = NULL, W = NULL, by, node_list,
@@ -36,9 +42,13 @@ tmle3_Spec_adapt <- R6Class(
         tmle_task_new <- self$make_tmle_task(data_new, node_list, initial = TRUE)
         blip_task <- self$get_blip_cf(tmle_task_new)
         dn <- self$get_Gstar(blip_task, initial_likelihood)
-        W <- data_new[, 1:3]
+        lenW <- length(self$get_W(data_new))
+        W <- data.frame(data_new[, 1:lenW])
+
+        private$.newW <- W
 
         data_targeted <- gen_data_adapt(n = by, Gstar = dn, W = W)
+        private$.trueY <- data_targeted$Y
       } else if (!is.null(W)) {
         # Pass in Ws, create, dummy A and Y:
         A <- rbinom(nrow(W), 1, prob = 0.5)
@@ -66,11 +76,15 @@ tmle3_Spec_adapt <- R6Class(
 
         ## SL step:
         sur_sl <- tmle_spec$get_sur_sl
-        covariates <- c(names(inter[, -"Y"]))
+        S <- self$get_S
+        W <- self$get_W(data = inter)
+
+        covariates <- c(W, S, "A")
 
         sur_tmle_task <- make_sl3_Task(inter, covariates = covariates, outcome = "Y")
         S_pred <- sur_sl$predict(sur_tmle_task)
         S_pred <- self$bound(S_pred)
+
         inter$Y <- S_pred
 
         # Combine:
@@ -79,7 +93,10 @@ tmle3_Spec_adapt <- R6Class(
 
         ## SL step:
         sur_sl <- tmle_spec$get_sur_sl
-        covariates <- c(names(inter[, -"Y"]))
+        S <- self$get_S
+        W <- self$get_W(data = inter)
+
+        covariates <- c(W, S, "A")
 
         sur_tmle_task <- make_sl3_Task(inter, covariates = covariates, outcome = "Y")
         S_pred <- sur_sl$predict(sur_tmle_task)
@@ -90,14 +107,11 @@ tmle3_Spec_adapt <- R6Class(
 
         A <- inter$A
         Y <- inter$Y
-        S <- self$get_S
-        SY <- c(S, "Y")
-        SYA <- c(S, "Y", "A")
 
         # NOTE: To estimate the rule, we should use only A and W, not S
         # this is so it matches later rule fitting
         # *Based on originally learned E(Y_s|A,W) (just SL surrogate!) or E(Y|A,W)
-        covariates <- c(names(data[, !SY, with = FALSE]))
+        covariates <- c(W, "A")
         Q_tmle_task <- make_sl3_Task(inter, covariates = covariates, outcome = "Y")
 
         Q_sl <- tmle_spec$get_Q_sl
@@ -123,7 +137,7 @@ tmle3_Spec_adapt <- R6Class(
 
         ## Learned a new gn (with more data):
         temp <- rbind.data.frame(old_data, inter)
-        covariates <- c(names(temp[, !SYA, with = FALSE]))
+        covariates <- c(W)
         g_tmle_task <- make_sl3_Task(temp, covariates = covariates, outcome = "A")
         g_tmle_inter <- make_sl3_Task(inter, covariates = covariates, outcome = "A")
 
@@ -136,11 +150,11 @@ tmle3_Spec_adapt <- R6Class(
         # Clever covariate and fluctuation:
         HA <- as.numeric(A == dn) / g_est
         eps <- tmle_spec$get_eps
-        # eps <- coef(glm(Y_orig ~ -1 + HA, offset = qlogis(S_pred), family = "quasibinomial"))
 
         # Update:
         Q.star <- plogis(qlogis(S_pred) + HA * eps)
         Q.star <- self$bound(Q.star)
+
         inter$Y <- Q.star
 
         # Combine:
@@ -309,10 +323,9 @@ tmle3_Spec_adapt <- R6Class(
       weight <- self$get_weight(G_ref, GstarW, A)
 
       # Learn the rule:
-      # NOTE: If Surroagte analysis, the rule is based on S, so E(S|W,A=1)-E(S|W,A=0)
+      # NOTE: If Surrogate analysis, the rule is based on Y_S, so E(Y_S|W,A=1)-E(Y_S|W,A=0)
       rA <- self$get_rule(task = cf_tasks, likelihood)
 
-      # How to incorporate weights?
       lf_rule <- define_lf(LF_rule, "A", rule_fun = rA)
 
       intervens <- Param_TSM_weight$new(
@@ -378,9 +391,21 @@ tmle3_Spec_adapt <- R6Class(
 
     get_param = function() {
       param <- private$.options$param
+      return(param)
+    },
+    # Useful for simulations.
+    get_newW = function() {
+      return(private$.newW)
+    },
+    # Useful for simulations.
+    get_trueY = function() {
+      return(private$.trueY)
     }
   ),
-  private = list()
+  private = list(
+    .newW = NULL,
+    .trueY = NULL
+  )
 )
 
 #' Adaptively learns the Mean under the Optimal Individualized Treatment Rule or
@@ -413,7 +438,8 @@ tmle3_Spec_adapt <- R6Class(
 tmle3_adapt <- function(S = NULL, V = NULL, learners,
                         param = "opt", training_size, test_size, mini_batch,
                         Gexploit = 0.1, Gexplore = 0.05) {
-  tmle3_Spec_adapt$new(S = S, V = V, learners = learners, param = param,
+  tmle3_Spec_adapt$new(
+    S = S, V = V, learners = learners, param = param,
     training_size = training_size, test_size = test_size,
     mini_batch = mini_batch, Gexploit = Gexploit, Gexplore = Gexplore
   )

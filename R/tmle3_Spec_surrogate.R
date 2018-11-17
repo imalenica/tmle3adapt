@@ -215,9 +215,9 @@ tmle3_Spec_surrogate <- R6Class(
 #' @param mini_batch Size of the increase in the initial training size, added per each iteration of the
 #' online Super Learner.
 #' @param opt_surrogate Optimal Surrogate can be based on the Super Learner prediction ("SL"), or
-#' targeted Super Learner ("TMLE"). In the case Optimal Surrogate is based on the targeted Super Learner, 
+#' targeted Super Learner ("TMLE"). In the case Optimal Surrogate is based on the targeted Super Learner,
 #' epsilon from the first part of the trial is transferred and propagated adaptively to further sequential trials.
-#' @param rule_outcome If the target parameter is the Mean under the Optimal Individualized Treatment, 
+#' @param rule_outcome If the target parameter is the Mean under the Optimal Individualized Treatment,
 #' then the rule can be learned with respect to the surrogate ("S"), or the actual final outcome ("Y").
 #'
 #'
