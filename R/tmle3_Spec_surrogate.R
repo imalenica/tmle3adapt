@@ -6,7 +6,6 @@
 #'
 #' @export
 #
-
 tmle3_Spec_surrogate <- R6Class(
   classname = "tmle3_Spec_surrogate",
   portable = TRUE,
@@ -16,8 +15,9 @@ tmle3_Spec_surrogate <- R6Class(
     # TO DO: Should we learn the initial estimates using Online Learning?
     # Theoretically, no need
     initialize = function(S, V = NULL, learners, param = "opt",
-                              training_size = NULL, test_size = NULL, mini_batch = NULL,
-                              rule_outcome = "S", opt_surrogate = "SL", ...) {
+                          training_size = NULL, test_size = NULL,
+                          mini_batch = NULL, rule_outcome = "S",
+                          opt_surrogate = "SL", ...) {
       options <- list(
         S = S, V = V, param = param, learners = learners, rule_outcome = rule_outcome,
         training_size = training_size, test_size = test_size, mini_batch = mini_batch,
@@ -207,10 +207,11 @@ tmle3_Spec_surrogate <- R6Class(
 #'
 #' @param S Covariates to consider for the Optimal Surrogate estimation.
 #' @param learners List of learners used for Q,g,S and B.
-#' @param param Target parameter. Current implementation supports Mean under the Optimal Individualized
-#' Treatment (opt) and Average Treatment Effect (are)
+#' @param param Target parameter. Current implementation supports Mean under the
+#'  Optimal Individualized Treatment (opt) and Average Treatment Effect (are)
 #' @param V Covariates the rule depends on.
-#' @param training_size Size of the initial training set. Necessary part of online Super Learner.
+#' @param training_size Size of the initial training set. Necessary part of
+#'  online Super Learner.
 #' @param test_size Size of the test set. Necessary part of online Super Learner.
 #' @param mini_batch Size of the increase in the initial training size, added per each iteration of the
 #' online Super Learner.
@@ -219,6 +220,7 @@ tmle3_Spec_surrogate <- R6Class(
 #' epsilon from the first part of the trial is transferred and propagated adaptively to further sequential trials.
 #' @param rule_outcome If the target parameter is the Mean under the Optimal Individualized Treatment,
 #' then the rule can be learned with respect to the surrogate ("S"), or the actual final outcome ("Y").
+#' @param ... Additional arguments passed to the constructor of the superclass.
 #'
 #'
 #' @export
@@ -226,10 +228,10 @@ tmle3_Spec_surrogate <- R6Class(
 
 tmle3_surrogate <- function(S, V = NULL, learners, param = "opt", training_size = NULL,
                             test_size = NULL, mini_batch = NULL, rule_outcome = "S",
-                            opt_surrogate = "SL") {
+                            opt_surrogate = "SL", ...) {
   tmle3_Spec_surrogate$new(
     S = S, V = V, learners = learners, param = param, rule_outcome = rule_outcome,
     training_size = training_size, test_size = test_size, mini_batch = mini_batch,
-    opt_surrogate = opt_surrogate
+    opt_surrogate = opt_surrogate, ...
   )
 }

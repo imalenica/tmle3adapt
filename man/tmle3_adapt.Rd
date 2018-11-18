@@ -6,8 +6,9 @@
 the Average Treatmen Effect in a sequential trial, possibly by finding an
 optimal surrogate outcome.}
 \usage{
-tmle3_adapt(S = NULL, V = NULL, learners, param = "opt", training_size,
-  test_size, mini_batch, Gexploit = 0.1, Gexplore = 0.05)
+tmle3_adapt(S = NULL, V = NULL, learners, param = "opt",
+  training_size, test_size, mini_batch, Gexploit = 0.1,
+  Gexplore = 0.05, ...)
 }
 \arguments{
 \item{S}{Covariates to consider for the Optimal Surrogate estimation. Leave
@@ -32,6 +33,8 @@ per each iteration of the online Super Learner.}
 \item{Gexploit}{Sequence t_n. Default is 0.1.}
 
 \item{Gexplore}{Sequence e_n. Default is 0.05.}
+
+\item{...}{Extra arguments passed to the constructor of the superclass.}
 }
 \description{
 O=(W,A,S,Y)

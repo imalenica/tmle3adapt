@@ -1,5 +1,5 @@
 #' Adaptively learns the Mean under the Optimal Individualized Treatment Rule or
-#' the Average Treatmen Effect in a sequential trial, possibly by finding an
+#' the Average Treatment Effect in a sequential trial, possibly by finding an
 #' optimal surrogate outcome.
 #'
 #' @importFrom R6 R6Class
@@ -20,7 +20,8 @@ tmle3_Spec_adapt <- R6Class(
       options <- list(
         S = S, V = V, param = param, learners = learners,
         training_size = training_size, test_size = test_size,
-        mini_batch = mini_batch, Gexploit = Gexploit, Gexplore = Gexplore
+        mini_batch = mini_batch, Gexploit = Gexploit, Gexplore = Gexplore,
+        ...
       )
       do.call(super$initialize, options)
     },
@@ -32,6 +33,7 @@ tmle3_Spec_adapt <- R6Class(
 
     new_Gstar = function(gen_data = NULL, gen_data_adapt = NULL, W = NULL, by, node_list,
                              initial_likelihood) {
+
       if (is.null(gen_data) & is.null(gen_data_adapt) & is.null(W)) {
         stop("Either gen_data and gen_data_adapt must be specified, or W.")
       }
@@ -207,7 +209,7 @@ tmle3_Spec_adapt <- R6Class(
       else {
         # TO DO: Change this to folds_rolling_origin...
         folds <- origami::make_folds(data,
-          fold_fun = folds_rolling_window,
+          fold_fun = origami::folds_rolling_window,
           window_size = training_size,
           validation_size = test_size, gap = 0,
           batch = mini_batch
@@ -432,15 +434,17 @@ tmle3_Spec_adapt <- R6Class(
 #'  per each iteration of the online Super Learner.
 #' @param Gexploit Sequence t_n. Default is 0.1.
 #' @param Gexplore Sequence e_n. Default is 0.05.
+#' @param ... Extra arguments passed to the constructor of the superclass.
 #'
 #' @export
 #
 tmle3_adapt <- function(S = NULL, V = NULL, learners,
                         param = "opt", training_size, test_size, mini_batch,
-                        Gexploit = 0.1, Gexplore = 0.05) {
+                        Gexploit = 0.1, Gexplore = 0.05, ...) {
   tmle3_Spec_adapt$new(
     S = S, V = V, learners = learners, param = param,
     training_size = training_size, test_size = test_size,
-    mini_batch = mini_batch, Gexploit = Gexploit, Gexplore = Gexplore
+    mini_batch = mini_batch, Gexploit = Gexploit, Gexplore = Gexplore,
+    ...
   )
 }

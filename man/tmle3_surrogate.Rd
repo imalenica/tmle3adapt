@@ -8,7 +8,7 @@ target parameters.}
 \usage{
 tmle3_surrogate(S, V = NULL, learners, param = "opt",
   training_size = NULL, test_size = NULL, mini_batch = NULL,
-  rule_outcome = "S", opt_surrogate = "SL")
+  rule_outcome = "S", opt_surrogate = "SL", ...)
 }
 \arguments{
 \item{S}{Covariates to consider for the Optimal Surrogate estimation.}
@@ -17,10 +17,11 @@ tmle3_surrogate(S, V = NULL, learners, param = "opt",
 
 \item{learners}{List of learners used for Q,g,S and B.}
 
-\item{param}{Target parameter. Current implementation supports Mean under the Optimal Individualized
-Treatment (opt) and Average Treatment Effect (are)}
+\item{param}{Target parameter. Current implementation supports Mean under the
+Optimal Individualized Treatment (opt) and Average Treatment Effect (are)}
 
-\item{training_size}{Size of the initial training set. Necessary part of online Super Learner.}
+\item{training_size}{Size of the initial training set. Necessary part of
+online Super Learner.}
 
 \item{test_size}{Size of the test set. Necessary part of online Super Learner.}
 
@@ -33,6 +34,8 @@ then the rule can be learned with respect to the surrogate ("S"), or the actual 
 \item{opt_surrogate}{Optimal Surrogate can be based on the Super Learner prediction ("SL"), or
 targeted Super Learner ("TMLE"). In the case Optimal Surrogate is based on the targeted Super Learner,
 epsilon from the first part of the trial is transferred and propagated adaptively to further sequential trials.}
+
+\item{...}{Additional arguments passed to the constructor of the superclass.}
 }
 \description{
 O=(W,A,S,Y)
