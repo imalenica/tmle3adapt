@@ -17,6 +17,13 @@ tmle3_Update_adapt <- R6Class(
     initialize = function(maxit = 100) {
       private$.maxit <- maxit
     },
+
+    bound = function(g) {
+      g[g < 0.01] <- 0.01
+      g[g > 0.99] <- 0.99
+      return(g)
+    },
+
     update_step = function(likelihood, tmle_task, cv_fold = -1) {
       # cv_fold=0 -- validation sets
       # so we estimate epsilon using valudation sets
@@ -39,15 +46,19 @@ tmle3_Update_adapt <- R6Class(
 
       observed_values <- lapply(update_nodes, tmle_task$get_tmle_node, bound = TRUE)
 
+      # Weight solution ok for only a single update node
       all_submodels <- lapply(update_nodes, function(update_node) {
         node_covariates <- lapply(clever_covariates, `[[`, update_node)
+        weight <- self$tmle_params[[1]]$weight
         covariates_dt <- do.call(cbind, node_covariates)
         observed <- tmle_task$get_tmle_node(update_node, bound = TRUE)
         initial <- likelihood$get_likelihood(tmle_task, update_node, cv_fold)
+        initial <- self$bound(initial)
         submodel_data <- list(
           observed = observed,
           H = covariates_dt,
-          initial = initial
+          initial = initial,
+          weight = weight
         )
       })
 
@@ -57,7 +68,10 @@ tmle3_Update_adapt <- R6Class(
     },
     fit_submodel = function(submodel_data) {
       suppressWarnings({
-        submodel_fit <- glm(observed ~ H - 1, submodel_data, offset = qlogis(submodel_data$initial), family = binomial())
+        submodel_fit <- glm(observed ~ H - 1, submodel_data,
+          offset = qlogis(submodel_data$initial),
+          family = binomial(), weight = submodel_data$weight
+        )
       })
       epsilon <- coef(submodel_fit)
 

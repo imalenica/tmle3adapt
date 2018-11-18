@@ -3,7 +3,7 @@
 \docType{data}
 \name{Param_TSM_weight}
 \alias{Param_TSM_weight}
-\title{Treatment Specific Mean}
+\title{Treatment Specific Mean, allowing for weights during the fluctuation step.}
 \format{\code{\link{R6Class}} object.}
 \usage{
 Param_TSM_weight
@@ -12,7 +12,8 @@ Param_TSM_weight
 \code{Param_base} object
 }
 \description{
-Parameter definition for the Treatment Specific Mean (TSM): $E_W[E_{Y|A}(Y|A=a|W)|$. Currently supports multiple static intervention nodes.
+Parameter definition for the Treatment Specific Mean (TSM): $E_W[E_{Y|A}(Y|A=a|W)|$.
+Currently supports multiple static intervention nodes.
 Does yet not support dynamic rule or stochastic interventions.
 }
 \section{Current Issues}{

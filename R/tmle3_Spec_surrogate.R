@@ -18,9 +18,9 @@ tmle3_Spec_surrogate <- R6Class(
                           training_size = NULL, test_size = NULL,
                           mini_batch = NULL, ...) {
       options <- list(
-        S = S, V = V, param = param, learners = learners,
-        training_size = training_size, test_size = test_size,
-        mini_batch = mini_batch, ...
+        S = S, V = V, param = param, learners = learners, rule_outcome = rule_outcome,
+        training_size = training_size, test_size = test_size, mini_batch = mini_batch,
+        opt_surrogate = opt_surrogate
       )
       do.call(super$initialize, options)
     },
@@ -85,24 +85,46 @@ tmle3_Spec_surrogate <- R6Class(
     make_params = function(tmle_task, likelihood) {
       S <- self$get_S
       V <- self$get_V
+      rule_outcome <- self$get_rule_outcome
       learners <- self$get_learners
       param <- self$get_param
+      opt_surrogate <- self$opt_surrogate
 
       opt <- Optimal_Surrogate$new(
         S = S, V = V, learners = learners, param = param,
-        tmle_task = tmle_task, likelihood = likelihood
+        tmle_task = tmle_task, likelihood = likelihood, rule_outcome = rule_outcome
       )
 
-      ### Learn the SL optimal surrogate, and save the fit:
-      S_pred <- opt$surrogate_SL()
-      private$sur_sl <- opt$get_sur_sl
-      private$opt <- opt
+      if (opt_surrogate == "SL") {
 
-      ### Target towards the parameter of interest:
-      Starg_pred <- opt$surrogate_TSL(S_pred = S_pred)
+        ### Learn the SL optimal surrogate, and save the fit:
+        # E(Y|S,A,W)
+        S_pred <- opt$surrogate_SL()
+        private$sur_sl <- opt$get_sur_sl
 
-      data <- tmle_task$get_data()
-      data$Y <- Starg_pred
+        data <- tmle_task$get_data()
+        data$Y <- S_pred
+      } else if (opt_surrogate == "TMLE") {
+
+        ### Learn the SL optimal surrogate, and save the fit:
+        # E(Y|S,A,W)
+        S_pred <- opt$surrogate_SL()
+        private$sur_sl <- opt$get_sur_sl
+
+        ### Target towards the parameter of interest:
+        # Save E(Y|A,W) or E(Y_S|A,W)
+        # Save corresponding epsilon
+        Starg_pred <- opt$surrogate_TSL(S_pred = S_pred)
+        private$opt <- opt
+        private$eps <- opt$get_eps
+        private$Q_sl <- opt$get_Q_sl
+
+        data <- tmle_task$get_data()
+        data$Y <- Starg_pred
+      } else {
+        stop("Optimal surrogate can be based on the Super Learner fit (surrogate = SL), 
+             or targeted Super Learner fit (surrogate = TMLE).")
+      }
 
       return(data)
     }
@@ -142,17 +164,33 @@ tmle3_Spec_surrogate <- R6Class(
     },
     get_param = function() {
       param <- private$.options$param
+      return(param)
+    },
+    opt_surrogate = function() {
+      opt_surrogate <- private$.options$opt_surrogate
+      return(opt_surrogate)
     },
     get_sur_sl = function() {
       return(private$sur_sl)
     },
+    get_Q_sl = function() {
+      return(private$Q_sl)
+    },
     get_opt = function() {
       return(private$opt)
+    },
+    get_rule_outcome = function() {
+      return(private$.options$rule_outcome)
+    },
+    get_eps = function() {
+      return(private$eps)
     }
   ),
   private = list(
     sur_sl = list(),
-    opt = list()
+    opt = list(),
+    Q_sl = list(),
+    eps = NULL
   )
 )
 
@@ -174,20 +212,25 @@ tmle3_Spec_surrogate <- R6Class(
 #' @param training_size Size of the initial training set. Necessary part of
 #'  online Super Learner.
 #' @param test_size Size of the test set. Necessary part of online Super Learner.
-#' @param mini_batch Size of the increase in the initial training size, added
-#'  per each iteration of the online Super Learner.
+#' @param mini_batch Size of the increase in the initial training size, added per each iteration of the
+#' online Super Learner.
+#' @param opt_surrogate Optimal Surrogate can be based on the Super Learner prediction ("SL"), or
+#' targeted Super Learner ("TMLE"). In the case Optimal Surrogate is based on the targeted Super Learner,
+#' epsilon from the first part of the trial is transferred and propagated adaptively to further sequential trials.
+#' @param rule_outcome If the target parameter is the Mean under the Optimal Individualized Treatment,
+#' then the rule can be learned with respect to the surrogate ("S"), or the actual final outcome ("Y").
 #' @param ... Additional arguments passed to the constructor of the superclass.
 #'
 #'
 #' @export
 #'
 
-tmle3_surrogate <- function(S, V = NULL, learners, param = "opt",
-                            training_size = NULL, test_size = NULL,
-                            mini_batch = NULL, ...) {
+tmle3_surrogate <- function(S, V = NULL, learners, param = "opt", training_size = NULL,
+                            test_size = NULL, mini_batch = NULL, rule_outcome = "S",
+                            opt_surrogate = "SL", ...) {
   tmle3_Spec_surrogate$new(
-    S = S, V = V, learners = learners, param = param,
-    training_size = training_size, test_size = test_size,
-    mini_batch = mini_batch, ...
+    S = S, V = V, learners = learners, param = param, rule_outcome = rule_outcome,
+    training_size = training_size, test_size = test_size, mini_batch = mini_batch,
+    opt_surrogate = opt_surrogate, ...
   )
 }
