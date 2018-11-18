@@ -16,7 +16,8 @@ tmle3_Spec_surrogate <- R6Class(
     # Theoretically, no need
     initialize = function(S, V = NULL, learners, param = "opt",
                           training_size = NULL, test_size = NULL,
-                          mini_batch = NULL, ...) {
+                          mini_batch = NULL, rule_outcome = "S",
+                          opt_surrogate = "SL", ...) {
       options <- list(
         S = S, V = V, param = param, learners = learners, rule_outcome = rule_outcome,
         training_size = training_size, test_size = test_size, mini_batch = mini_batch,

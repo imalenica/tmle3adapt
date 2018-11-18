@@ -1,6 +1,5 @@
 context("Test finding the optimal surrogate")
 
-library(testthat)
 library(sl3)
 library(data.table)
 library(tmle3adapt)

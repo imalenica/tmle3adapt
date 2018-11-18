@@ -6,14 +6,9 @@
 the Average Treatmen Effect in a sequential trial, possibly by finding an
 optimal surrogate outcome.}
 \usage{
-<<<<<<< HEAD
-tmle3_adapt(surrogate = TRUE, S = NULL, V = NULL, learners,
-  param = "opt", training_size, test_size, mini_batch, Gexploit = 0.1,
+tmle3_adapt(S = NULL, V = NULL, learners, param = "opt",
+  training_size, test_size, mini_batch, Gexploit = 0.1,
   Gexplore = 0.05, ...)
-=======
-tmle3_adapt(S = NULL, V = NULL, learners, param = "opt", training_size,
-  test_size, mini_batch, Gexploit = 0.1, Gexplore = 0.05)
->>>>>>> fb5d082b8a95e093206d5eb52b97326fde9d39e1
 }
 \arguments{
 \item{S}{Covariates to consider for the Optimal Surrogate estimation. Leave

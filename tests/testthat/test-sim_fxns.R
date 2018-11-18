@@ -1,6 +1,6 @@
 context("Test the simulation function")
 
-library(testthat)
+library(here)
 library(sl3)
 library(data.table)
 library(tmle3adapt)
@@ -68,7 +68,7 @@ Gexplore <- 0.01
 n_max <- 1600
 by <- 200
 n <- 1000
-source(here("Sandbox/Generate_DGD_1b.R"))
+source(here("sandbox/Generate_DGD_1b.R"))
 
 est <- tmle3_sadapt(
   surrogate = surrogate, S = S, W = W, V = NULL, A = A, Y = Y,

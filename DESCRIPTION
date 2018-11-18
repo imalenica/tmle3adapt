@@ -38,7 +38,8 @@ Imports:
 Suggests:
     testthat,
     knitr,
-    rmarkdown
+    rmarkdown,
+    here
 Remotes:
     github::tlverse/tmle3,
     github::tlverse/sl3,

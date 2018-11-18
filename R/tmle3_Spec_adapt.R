@@ -209,7 +209,7 @@ tmle3_Spec_adapt <- R6Class(
       else {
         # TO DO: Change this to folds_rolling_origin...
         folds <- origami::make_folds(data,
-          fold_fun = folds_rolling_window,
+          fold_fun = origami::folds_rolling_window,
           window_size = training_size,
           validation_size = test_size, gap = 0,
           batch = mini_batch

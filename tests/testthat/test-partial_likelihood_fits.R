@@ -71,10 +71,17 @@ tmle_task <- tmle_spec_adapt$make_tmle_task(data, node_list)
 # Define likelihood:
 initial_likelihood <- tmle_spec_adapt$make_initial_likelihood(tmle_task,
                                                               learner_list)
-initial_likelihood$get_likelihood(tmle_task, "A")
+
+test_that("Only specified node 'A' has been trained in initial computation", {
+  expect_true(is.numeric(initial_likelihood$get_likelihood(tmle_task, "A")))
+})
+test_that("Node 'Y' has not been trained eagerly in initial computation", {
+  expect_error(initial_likelihood$get_likelihood(tmle_task, "Y"))
+})
 
 #updater <- tmle_spec_adapt$make_updater()
-#targeted_likelihood <- tmle_spec_adapt$make_targeted_likelihood(initial_likelihood, updater)
+#targeted_likelihood <-
+  #tmle_spec_adapt$make_targeted_likelihood(initial_likelihood, updater)
 
 #tmle_params <- tmle_spec_adapt$make_params(tmle_task, targeted_likelihood)
 #fit <- fit_tmle3(tmle_task, targeted_likelihood, tmle_params, updater)
@@ -103,7 +110,14 @@ tmle_task <- tmle_spec$make_tmle_task(data, node_list)
 
 # Define likelihood:
 initial_likelihood <- tmle_spec$make_initial_likelihood(tmle_task, learner_list)
-initial_likelihood$get_likelihood(tmle_task, "A")
+
+test_that("Only specified node 'A' has been trained in initial computation", {
+  expect_true(is.numeric(initial_likelihood$get_likelihood(tmle_task, "A")))
+})
+
+test_that("Node 'Y' has not been trained eagerly in initial computation", {
+  expect_error(initial_likelihood$get_likelihood(tmle_task, "Y"))
+})
 
 #####################################################
 # Adaptive Sequential Trial with surrogate outcome
@@ -136,11 +150,18 @@ tmle_task <- tmle_spec_adapt$make_tmle_task(data, node_list)
 # Define likelihood:
 initial_likelihood <- tmle_spec_adapt$make_initial_likelihood(tmle_task,
                                                               learner_list)
-initial_likelihood$get_likelihood(tmle_task, "A")
-summary(initial_likelihood$get_likelihood(tmle_task, node = "Y"))
+
+test_that("Only specified node 'A' has been trained in initial computation", {
+  expect_true(is.numeric(initial_likelihood$get_likelihood(tmle_task, "A")))
+})
+
+test_that("Node 'Y' has not been trained eagerly in initial computation", {
+  expect_error(initial_likelihood$get_likelihood(tmle_task, "Y"))
+})
 
 #updater <- tmle_spec_adapt$make_updater()
-#targeted_likelihood <- tmle_spec_adapt$make_targeted_likelihood(initial_likelihood, updater)
+#targeted_likelihood <-
+  #tmle_spec_adapt$make_targeted_likelihood(initial_likelihood, updater)
 
 #self <- tmle_spec_adapt
 #private <- tmle_spec_adapt$.__enclos_env__$private
