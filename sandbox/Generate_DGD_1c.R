@@ -1,5 +1,8 @@
 #####################################################
 # Simulation 1c
+# 
+# Test Continuous Outcome
+#
 # Adaptive sequential trial with multiple biomarkers
 # collected at t=3 time points 
 # First surrogate is not predictive of the outcome

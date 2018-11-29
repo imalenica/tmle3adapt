@@ -1,4 +1,5 @@
-#' Defines a TML Estimator for the Average Treatment Effect
+#' Defines a TML Estimator for the ATE
+#'
 #'
 #' @importFrom R6 R6Class
 #'
@@ -10,30 +11,31 @@ tmle3_Spec_ATE <- R6Class(
   class = TRUE,
   inherit = tmle3_Spec,
   public = list(
-    initialize = function(baseline_level, contrast_level, ...) {
-      # TODO: use sl3 param grabbing code
-      options <- list(
-        baseline_level = baseline_level,
-        contrast_level = contrast_level
-      )
+    initialize = function(baseline = 0, contrast = 1, ...) {
+      options <- list(baseline_level = baseline,
+                      contrast_level = contrast)
       do.call(super$initialize, options)
     },
+    
+    bound = function(g) {
+      g[g < 0.01] <- 0.01
+      g[g > 0.99] <- 0.99
+      return(g)
+    },
+    
     make_params = function(tmle_task, likelihood) {
       baseline_level <- self$options$baseline_level
       contrast_level <- self$options$contrast_level
-
+      
       intervention_base <- define_lf(LF_static, "A", value = baseline_level)
       intervention_cont <- define_lf(LF_static, "A", value = contrast_level)
-
+      
       tsm_base <- Param_TSM$new(likelihood, intervention_base)
       tsm_cont <- Param_TSM$new(likelihood, intervention_cont)
-
-      ate <- Param_delta$new(
-        likelihood, delta_param_ATE,
-        list(tsm_base, tsm_cont)
-      )
+      ate <- Param_delta$new(likelihood, delta_param_ATE,
+                            list(tsm_base, tsm_cont))
       tmle_params <- list(tsm_base, tsm_cont, ate)
-
+      
       return(tmle_params)
     }
   ),
@@ -55,7 +57,7 @@ tmle3_Spec_ATE <- R6Class(
 #'
 #' @export
 #
-tmle_ATE <- function(baseline_level, contrast_level) {
+tmle_ate <- function(baseline, contrast) {
   # TODO: unclear why this has to be in a factory function
-  tmle3_Spec_ATE$new(baseline_level, contrast_level)
+  tmle3_Spec_ATE$new(baseline, contrast)
 }

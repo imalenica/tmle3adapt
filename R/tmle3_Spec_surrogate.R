@@ -25,6 +25,17 @@ tmle3_Spec_surrogate <- R6Class(
       )
       do.call(super$initialize, options)
     },
+    
+    get_W = function(data) {
+      W <- names(data)[grep("W", names(data))]
+      return(W)
+    },
+    
+    bound = function(g) {
+      g[g < 0.01] <- 0.01
+      g[g > 0.99] <- 0.99
+      return(g)
+    },
 
     make_tmle_task = function(data, node_list, ...) {
       setDT(data)
@@ -71,19 +82,67 @@ tmle3_Spec_surrogate <- R6Class(
       return(tmle_task)
     },
 
-    get_surrogate = function(inter) {
+    get_SL_surrogate = function(inter) {
+      
       # Get the fit we learned in the 1st part of the trial:
-      osl <- self$get_sur_sl
-      sur_sl <- osl$get_sur_sl
-
-      # TO DO: Y must be last for this to work!
-      covariates <- c(names(inter)[-length(inter)])
+      sur_sl <- self$get_sur_sl
+      
+      S <- self$get_S
+      W <- self$get_W(data=inter)
+      
+      covariates <- c(W, S, "A")
 
       sur_tmle_task <- make_sl3_Task(inter, covariates = covariates, outcome = "Y")
       S_pred <- sur_sl$predict(sur_tmle_task)
+      
+      inter$Y<-S_pred
+      return(inter)
     },
+    
+    get_targeted_surrogate = function(inter, param) {
+      
+      # Get the fit we learned in the 1st part of the trial:
+      sur_sl <- self$get_sur_sl
+      
+      S <- self$get_S
+      W <- self$get_W(data=inter)
+      
+      covariates <- c(W, S, "A")
+      
+      sur_tmle_task <- make_sl3_Task(inter, covariates = covariates, outcome = "Y")
+      S_pred <- sur_sl$predict(sur_tmle_task)
+      S_pred <- self$bound(S_pred)
+      inter$Y <- S_pred
+      
+      eps <- self$get_eps
+      
+      if(param=="ate"){
+        
+        # Get the estimated g:
+        g_task <- make_sl3_Task(inter, covariates = c(W), outcome = "A")
+        g_sl <- self$get_learners$A
+        
+        g.sl <- g_sl$train(g_task)
+        g.ests <- g.sl$predict()
+        g.ests <- self$bound(g.ests)
+        
+        # Clever covariate and fluctuation:
+        H.AW <- (2*inter$A-1) / g.ests
+
+        # Update:
+        Q.star <- plogis(qlogis(S_pred) + H.AW * eps)
+        
+      }else if(param=="oit"){
+        #TO DO
+      }
+      
+      inter$Y <- Q.star
+      return(inter)
+    },
+    
 
     make_params = function(tmle_task, likelihood) {
+      
       S <- self$get_S
       V <- self$get_V
       rule_outcome <- self$get_rule_outcome
@@ -95,7 +154,7 @@ tmle3_Spec_surrogate <- R6Class(
         S = S, V = V, learners = learners, param = param,
         tmle_task = tmle_task, likelihood = likelihood, rule_outcome = rule_outcome
       )
-
+      
       if (opt_surrogate == "SL") {
 
         ### Learn the SL optimal surrogate, and save the fit:

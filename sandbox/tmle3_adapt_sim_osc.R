@@ -1,5 +1,5 @@
-#Function to run simulations easily
-#Optimal surrogate comparisson
+#Function to run simulations for the adaptive sequential design.
+#Optimal surrogate comparison
 
 tmle3_adapt_sim_osc <- function(surrogate = FALSE,
                             S = S,

@@ -1,6 +1,7 @@
-###############################################
-# Simulation 1a: True Y and data-adaptive Y
-###############################################
+#####################################################
+# Simulation 1a: 
+# Target parameter mean under the data-adaptive rule
+#####################################################
 
 library(here)
 library(data.table)
@@ -137,3 +138,4 @@ for(i in 1:MC) {
   se_sl[i,] <-  t(summary_sl$se)
   
 }
+ 

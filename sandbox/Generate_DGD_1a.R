@@ -1,5 +1,8 @@
 #####################################################
-# Simulation 1a 
+# Simulation 1a (parameter: mean under OIT)
+#
+# Test Simple Rule with Binary Outcome
+# 
 # Adaptive sequential trial with multiple biomarkers
 # collected at t=4 time points 
 #####################################################

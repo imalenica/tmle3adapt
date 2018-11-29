@@ -83,7 +83,7 @@ Optimal_Surrogate <- R6Class(
       if (tmle_task$npsem$Y$variable_type$type != "continuous") {
         S_pred <- self$bound(S_pred)
       }
-
+ 
       return(S_pred)
     },
 
@@ -292,14 +292,56 @@ Optimal_Surrogate <- R6Class(
         # e<-fit$updater$epsilons[[1]]$Y
         # H<-fit$tmle_params[[1]]$clever_covariates()
       } else if (param == "ate") {
+        
+        A <- data$A
+        Y <- data$Y
+        S <- self$get_S
+        W <- self$get_W(data = data)
 
-        # TO DO
+        # Get the estimated g:
+        g.ests <- initial_likelihood$get_likelihood(tmle_task = tmle_task, node = "A")
+        g.ests <- self$bound(g.ests)
+        
+        # Clever covariate and fluctuation:
+        H.AW <- (2*data$A-1)/ g.ests
+        #H.AW <- as.numeric(data$A == 1)/ g.ests - as.numeric(data$A==0)/(1 - g.ests)
+        #H.1W <- 1/g.ests
+        #H.0W <- -1/(1-g.ests)
+
+        #Q1W <- Q0W <- data
+        #Q1W$A <- 1
+        #Q1W_task <- make_sl3_Task(Q1W, covariates = c(W,S,"A"), outcome = "Y")
+        #Q1W_pred <- opt$get_sur_sl$predict(Q1W_task)
+        
+        #Q0W$A <- 0
+        #Q0W_task <- make_sl3_Task(Q0W, covariates = c(W,S,"A"), outcome = "Y")
+        #Q0W_pred <- opt$get_sur_sl$predict(Q0W_task)
+        
+        #Target towards ATE
+        eps <- coef(glm(Y ~ -1 + H.AW + offset(qlogis(S_pred)), family = "quasibinomial"))
+        private$.eps <- eps
+        
+        # Update:
+        Q.star <- plogis(qlogis(S_pred) + H.AW * eps)
+        #Q.star.1 <- plogis(qlogis(Q1W_pred) + H.1W * eps)
+        #Q.star.0 <- plogis(qlogis(Q0W_pred) + H.0W * eps)
+        
+        if (tmle_task$npsem$Y$variable_type$type != "continuous") {
+          Q.star <- self$bound(Q.star)
+        } else if (tmle_task$npsem$Y$variable_type$type == "continuous") {
+          Q.star <- self$revert(Q.star)
+        }
+        
+        return(Q.star)
+        
       } else {
         stop("The specified parameter is not implemented. The package currently only
              supports Mean under the Optimal Individualized Treatment (opt) and 
              Average Treatment Effect (ate)")
       }
+    
     }
+    
   ),
   active = list(
     tmle_task = function() {

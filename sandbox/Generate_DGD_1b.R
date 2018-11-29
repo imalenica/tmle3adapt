@@ -1,5 +1,8 @@
 #####################################################
 # Simulation 1b
+#
+# Test simple rule with specific level of correlation
+#
 # Adaptive sequential trial with multiple biomarkers
 # collected at t=2 time points and 2 different assays
 #####################################################
