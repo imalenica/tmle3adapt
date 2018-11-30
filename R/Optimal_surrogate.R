@@ -89,6 +89,7 @@ Optimal_Surrogate <- R6Class(
 
     # Targeted SuperLearner of the surrogate:
     surrogate_TSL = function(S_pred) {
+      
       param <- self$get_param
       tmle_task <- self$tmle_task
       initial_likelihood <- self$likelihood
@@ -291,7 +292,10 @@ Optimal_Surrogate <- R6Class(
         # Q<-initial_likelihood$get_likelihood(tmle_task_opt, "Y", -1)
         # e<-fit$updater$epsilons[[1]]$Y
         # H<-fit$tmle_params[[1]]$clever_covariates()
+        
       } else if (param == "ate") {
+
+        data <- tmle_task$get_data()
         
         A <- data$A
         Y <- data$Y
@@ -305,6 +309,17 @@ Optimal_Surrogate <- R6Class(
         # Clever covariate and fluctuation:
         H.AW <- (2*data$A-1)/ g.ests
         #H.AW <- as.numeric(data$A == 1)/ g.ests - as.numeric(data$A==0)/(1 - g.ests)
+        
+        #Target towards ATE
+        eps <- coef(glm(data$Y ~ -1 + H.AW + offset(qlogis(S_pred)), family = "quasibinomial"))
+        print(eps)
+        private$.eps <- eps
+        
+        # Update:
+        Q.star <- plogis(qlogis(S_pred) + H.AW * eps)
+        
+        #Testing:
+        
         #H.1W <- 1/g.ests
         #H.0W <- -1/(1-g.ests)
 
@@ -317,12 +332,8 @@ Optimal_Surrogate <- R6Class(
         #Q0W_task <- make_sl3_Task(Q0W, covariates = c(W,S,"A"), outcome = "Y")
         #Q0W_pred <- opt$get_sur_sl$predict(Q0W_task)
         
-        #Target towards ATE
-        eps <- coef(glm(Y ~ -1 + H.AW + offset(qlogis(S_pred)), family = "quasibinomial"))
-        private$.eps <- eps
+        #tmle(Y=data$Y, A=A, W = data[,1:3], Q = cbind(Q0W_pred, Q1W_pred))
         
-        # Update:
-        Q.star <- plogis(qlogis(S_pred) + H.AW * eps)
         #Q.star.1 <- plogis(qlogis(Q1W_pred) + H.1W * eps)
         #Q.star.0 <- plogis(qlogis(Q0W_pred) + H.0W * eps)
         

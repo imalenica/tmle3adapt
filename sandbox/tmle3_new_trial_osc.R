@@ -17,6 +17,8 @@ tmle3_new_trial_osc <- function(surrogate = TRUE,
                                 learners = learner_list,
                                 #Initial data for the 1st trial (if available)
                                 data = NULL,
+                                #Data from a new trial (used for testing only)
+                                data_new = NULL,
                                 #Target parameter (opt vs. ate)
                                 param = "opt",
                                 #Initial training size for the Online SL
@@ -170,7 +172,9 @@ tmle3_new_trial_osc <- function(surrogate = TRUE,
     ########################################
     
     #Sample data from a new trial:
-    data_new <- gen_data(n=n2)
+    if(is.null(data_new)){
+      data_new <- gen_data(n=n2)
+    }
     
     #Set up spec for ATE:
     tmle_spec_ate <- tmle_ate(baseline = 0, contrast = 1)
