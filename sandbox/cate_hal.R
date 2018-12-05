@@ -9,7 +9,7 @@ g_AW <- glm(A ~ W, family = "binomial")
 pred_g <- as.numeric(predict(g_AW))
 
 
-hal_cate_delta <- function(tmle_task, g_fit, ci_level = 0.95, ...) {
+hal_cate_delta <- function(tmle_task, g_fit, ci_level = 0.95) {
 
   # get multiplier for Wald-style confidence intervals
   ci_mult <- (c(-1, 1) * stats::qnorm((1 - ci_level) / 2))
@@ -21,7 +21,8 @@ hal_cate_delta <- function(tmle_task, g_fit, ci_level = 0.95, ...) {
 
   # fit a HAL model to the pseudo-CATE transformed values and predict on W
   cate <- as.numeric((Y * 2 * A - 1) / g_fit)
-  hal_cate <- hal9001::fit_hal(X = as.matrix(W), Y = cate, ...)
+  hal_cate <- hal9001::fit_hal(X = as.matrix(W), Y = cate,
+                               return_x_basis = TRUE)
   pred_cate <- stats::predict(hal_cate, new_data = W)
 
   # compute residuals; extract basis function matrix and HAL coefficients
@@ -29,14 +30,13 @@ hal_cate_delta <- function(tmle_task, g_fit, ci_level = 0.95, ...) {
   phi_basis <- as.matrix(hal_cate$x_basis)
   coefs_hal <- hal_cate$coefs
 
-  # J x J matrix of basis function values -- analogous to EIF matrix?
-  cnb <- tcrossprod(crossprod(phi_basis, resids_cate), coefs_hal)[, -1]
+  # J x J matrix of basis function values
+  cnb <- tcrossprod(phi_basis)
   cnb_inv <- MASS::ginv(as.matrix(cnb))
 
   # compute individual-level estimates of basis function contributions
-  cate_est_obs <- tcrossprod(phi_basis,
-                             t(crossprod(cnb_inv,
-                                         crossprod(phi_basis, resids))))
+  cate_coefs_resids <- t(resids_cate) %*% cnb_inv %*% phi_basis
+  cate_est_obs <- tcrossprod(phi_basis, cate_est_obs)
 
   # compute variance of CATE, parameter estimate, and get inference
   cate_var <- var(cate_est_obs)
