@@ -17,11 +17,11 @@ tmle3_Spec_surrogate <- R6Class(
     # Theoretically, no need
     initialize = function(S, V = NULL, learners, param = "opt",
                               training_size = NULL, test_size = NULL, mini_batch = NULL,
-                              rule_outcome = "S", opt_surrogate = "SL", ...) {
+                              rule_outcome = "S", opt_surrogate = "SL", target_wrong=FALSE, ...) {
       options <- list(
         S = S, V = V, param = param, learners = learners, rule_outcome = rule_outcome,
         training_size = training_size, test_size = test_size, mini_batch = mini_batch,
-        opt_surrogate = opt_surrogate
+        opt_surrogate = opt_surrogate, target_wrong=target_wrong
       )
       do.call(super$initialize, options)
     },
@@ -99,6 +99,49 @@ tmle3_Spec_surrogate <- R6Class(
       return(inter)
     },
     
+    get_wtargeted_surrogate = function(inter, param) {
+      
+      # Get the fit we learned in the 1st part of the trial:
+      sur_sl <- self$get_sur_sl
+      
+      S <- self$get_S
+      W <- self$get_W(data=inter)
+      
+      covariates <- c(W, S, "A")
+      
+      sur_tmle_task <- make_sl3_Task(inter, covariates = covariates, outcome = "Y")
+      S_pred <- sur_sl$predict(sur_tmle_task)
+      S_pred <- self$bound(S_pred)
+      inter$Y <- S_pred
+      
+      eps <- self$get_eps
+      
+      if(param=="ate"){
+        
+        # Get the estimated g:
+        g_task <- make_sl3_Task(inter, covariates = c(W), outcome = "A")
+        g_sl <- self$get_learners$A
+        
+        g.sl <- g_sl$train(g_task)
+        g.ests <- g.sl$predict()
+        g.ests <- self$bound(g.ests)
+        
+        # Clever covariate and fluctuation:
+        #H.AW <- inter$W1
+        H.AW <- as.numeric(inter$A == 0)/(1 - g.ests)
+        
+        # Update:
+        Q.star <- plogis(qlogis(S_pred) + H.AW * eps)
+        
+      }else if(param=="oit"){
+        #TO DO
+      }
+      
+      inter$Y <- Q.star
+      return(inter)
+      
+    },
+    
     get_targeted_surrogate = function(inter, param) {
       
       # Get the fit we learned in the 1st part of the trial:
@@ -140,7 +183,6 @@ tmle3_Spec_surrogate <- R6Class(
       return(inter)
     },
     
-
     make_params = function(tmle_task, likelihood) {
       
       S <- self$get_S
@@ -174,7 +216,13 @@ tmle3_Spec_surrogate <- R6Class(
         ### Target towards the parameter of interest:
         # Save E(Y|A,W) or E(Y_S|A,W)
         # Save corresponding epsilon
-        Starg_pred <- opt$surrogate_TSL(S_pred = S_pred)
+        
+        if(self$get_target_wrong==FALSE){
+          Starg_pred <- opt$surrogate_TSL(S_pred = S_pred)
+        }else if(self$get_target_wrong==TRUE){
+          Starg_pred <- opt$surrogate_wTSL(S_pred = S_pred)
+        }
+       
         private$opt <- opt
         private$eps <- opt$get_eps
         private$Q_sl <- opt$get_Q_sl
@@ -242,6 +290,9 @@ tmle3_Spec_surrogate <- R6Class(
     get_rule_outcome = function() {
       return(private$.options$rule_outcome)
     },
+    get_target_wrong = function(){
+      return(private$.options$target_wrong)
+    },
     get_eps = function() {
       return(private$eps)
     }
@@ -278,6 +329,7 @@ tmle3_Spec_surrogate <- R6Class(
 #' epsilon from the first part of the trial is transferred and propagated adaptively to further sequential trials.
 #' @param rule_outcome If the target parameter is the Mean under the Optimal Individualized Treatment,
 #' then the rule can be learned with respect to the surrogate ("S"), or the actual final outcome ("Y").
+#' @param target_wrong Used for testing purposes- targets the wrong parameter (random function of W and A).
 #'
 #'
 #' @export
@@ -285,10 +337,10 @@ tmle3_Spec_surrogate <- R6Class(
 
 tmle3_surrogate <- function(S, V = NULL, learners, param = "opt", training_size = NULL,
                             test_size = NULL, mini_batch = NULL, rule_outcome = "S",
-                            opt_surrogate = "SL") {
+                            opt_surrogate = "SL", target_wrong=FALSE) {
   tmle3_Spec_surrogate$new(
     S = S, V = V, learners = learners, param = param, rule_outcome = rule_outcome,
     training_size = training_size, test_size = test_size, mini_batch = mini_batch,
-    opt_surrogate = opt_surrogate
+    opt_surrogate = opt_surrogate, target_wrong=target_wrong
   )
 }

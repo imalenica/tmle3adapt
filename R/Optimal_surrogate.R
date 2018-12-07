@@ -86,6 +86,54 @@ Optimal_Surrogate <- R6Class(
  
       return(S_pred)
     },
+    
+    #Target the wrong parameter. Customized for ATE
+    surrogate_wTSL = function(S_pred){
+      
+      param <- self$get_param
+      tmle_task <- self$tmle_task
+      initial_likelihood <- self$likelihood
+      rule_outcome <- self$get_rule_outcome
+      
+      if(param == "ate"){
+        
+        data <- tmle_task$get_data()
+        
+        A <- data$A
+        Y <- data$Y
+        S <- self$get_S
+        W <- self$get_W(data = data)
+        
+        # Clever covariate:
+        #H.AW <- data$W1
+        
+        # Get the estimated g:
+        g.ests <- initial_likelihood$get_likelihood(tmle_task = tmle_task, node = "A")
+        g.ests <- self$bound(g.ests)
+        
+        # Clever covariate and fluctuation:
+        H.AW <- as.numeric(data$A == 0)/(1 - g.ests)
+
+        #Target towards ATE
+        eps <- coef(glm(data$Y ~ -1 + H.AW + offset(qlogis(S_pred)), family = "quasibinomial"))
+        print(eps)
+        private$.eps <- eps
+        
+        # Update:
+        Q.star <- plogis(qlogis(S_pred) + H.AW * eps)
+
+        if (tmle_task$npsem$Y$variable_type$type != "continuous") {
+          Q.star <- self$bound(Q.star)
+        } else if (tmle_task$npsem$Y$variable_type$type == "continuous") {
+          Q.star <- self$revert(Q.star)
+        }
+        
+        return(Q.star)
+      }else {
+        stop("Targeting the wrong parameter works mostly for ATE.")
+      }
+      
+    },
 
     # Targeted SuperLearner of the surrogate:
     surrogate_TSL = function(S_pred) {
