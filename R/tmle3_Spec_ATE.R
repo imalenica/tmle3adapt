@@ -23,6 +23,10 @@ tmle3_Spec_ATE <- R6Class(
       return(g)
     },
     
+    make_updater = function() {
+      updater <- tmle3_Update_bound$new()
+    },
+    
     make_params = function(tmle_task, likelihood) {
       baseline_level <- self$options$baseline_level
       contrast_level <- self$options$contrast_level

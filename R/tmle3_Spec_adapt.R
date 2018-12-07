@@ -219,8 +219,7 @@ tmle3_Spec_adapt <- R6Class(
       return(tmle_task)
     },
     make_updater = function() {
-      # updater <- tmle3_Update$new()
-      updater <- tmle3_Update_adapt$new()
+      updater <- tmle3_Update_bound$new()
     },
 
     blik = function(A, G) {

@@ -1,5 +1,4 @@
 #' Defines an update (submodel+loss function)
-#' Allows for adding custom weights to the fluctuation step.
 #'
 #' Current Limitations:
 #' only updating one node
@@ -9,47 +8,45 @@
 #'
 #' @export
 #
-tmle3_Update_adapt <- R6Class(
-  classname = "tmle3_Update_adapt",
+tmle3_Update_bound <- R6Class(
+  classname = "tmle3_Update_bound",
   portable = TRUE,
   class = TRUE,
   public = list(
-    initialize = function(maxit = 100) {
-      private$.maxit <- maxit
+    initialize = function(maxit=100) {
+      private$.maxit=maxit
     },
-
+    
     bound = function(g) {
       g[g < 0.01] <- 0.01
       g[g > 0.99] <- 0.99
       return(g)
     },
-
+    
     update_step = function(likelihood, tmle_task, cv_fold = -1) {
       # cv_fold=0 -- validation sets
       # so we estimate epsilon using valudation sets
-
+      
       # get new submodel fit
       all_submodels <- self$generate_submodel_data(likelihood, tmle_task, cv_fold)
       new_epsilons <- self$fit_submodels(all_submodels)
-
+      
       # update likelihoods
       likelihood$update(new_epsilons, self$step_number, cv_fold)
-
+      
       # increment step count
       private$.step_number <- private$.step_number + 1
     },
     generate_submodel_data = function(likelihood, tmle_task, cv_fold = -1) {
       update_nodes <- self$update_nodes
-
+      
       # todo: support not getting observed for case where we're applying updates instead of fitting them
       clever_covariates <- lapply(self$tmle_params, function(tmle_param) tmle_param$clever_covariates(tmle_task, cv_fold))
-
+      
       observed_values <- lapply(update_nodes, tmle_task$get_tmle_node, bound = TRUE)
-
-      # Weight solution ok for only a single update node
+      
       all_submodels <- lapply(update_nodes, function(update_node) {
         node_covariates <- lapply(clever_covariates, `[[`, update_node)
-        weight <- self$tmle_params[[1]]$weight
         covariates_dt <- do.call(cbind, node_covariates)
         observed <- tmle_task$get_tmle_node(update_node, bound = TRUE)
         initial <- likelihood$get_likelihood(tmle_task, update_node, cv_fold)
@@ -57,21 +54,17 @@ tmle3_Update_adapt <- R6Class(
         submodel_data <- list(
           observed = observed,
           H = covariates_dt,
-          initial = initial,
-          weight = weight
+          initial = initial
         )
       })
-
+      
       names(all_submodels) <- update_nodes
-
+      
       return(all_submodels)
     },
     fit_submodel = function(submodel_data) {
       suppressWarnings({
-        submodel_fit <- glm(observed ~ H - 1, submodel_data,
-          offset = qlogis(submodel_data$initial),
-          family = binomial(), weight = submodel_data$weight
-        )
+        submodel_fit <- glm(observed ~ H - 1, submodel_data, offset = qlogis(submodel_data$initial), family = binomial())
       })
       epsilon <- coef(submodel_fit)
 
@@ -101,7 +94,7 @@ tmle3_Update_adapt <- R6Class(
       updated_likelihood <- mapply(self$apply_submodel, all_submodels, all_epsilon, SIMPLIFY = FALSE)
       return(updated_likelihood)
     },
-    check_convergence = function(tmle_task) {
+    check_convergence = function(tmle_task){
       ED_criterion <- 1 / tmle_task$nrow
       estimates <- lapply(
         self$tmle_params,
@@ -113,14 +106,16 @@ tmle3_Update_adapt <- R6Class(
       ED <- colMeans(ICs)
       return(max(abs(ED)) < ED_criterion)
     },
-    update = function(likelihood, tmle_task) {
+    update = function(likelihood, tmle_task){
+      
       maxit <- private$.maxit
       for (steps in seq_len(maxit)) {
         self$update_step(likelihood, tmle_task)
-        if (self$check_convergence(tmle_task)) {
+        if(self$check_convergence(tmle_task)){
           break
         }
       }
+      
     }
   ),
   active = list(
