@@ -1,4 +1,4 @@
-#' Dynamic Likelihood Factor
+#' Dynamic Likelihood Factor with static rule
 #'
 #' @importFrom R6 R6Class
 #' @importFrom uuid UUIDgenerate
@@ -14,8 +14,9 @@
 #'   \code{define_lf(LF_static, name, type, value, ...)}
 #'
 #'   \describe{
-#'     \item{\code{name}}{character, the name of the factor. Should match a node name in the nodes specified by \code{\link{tmle3_Task}$npsem}
-#'     }
+#'     \item{\code{name}}{character, the name of the factor. Should match a node name 
+#'     in the nodes specified by tmle3_Task.}
+#'     
 #'     \item{\code{type}}{character, either 'density', for conditional density or, 'mean' for conditional mean
 #'     }
 #'     \item{\code{value}}{the static value
@@ -32,35 +33,39 @@
 #'
 #' @export
 
-LF_rule <- R6Class(
-  classname = "LF_rule", portable = TRUE, class = TRUE,
-  inherit = LF_base, public = list(
-    initialize = function(name,
-                              type = "density", rule_fun, ...) {
+LF_static_rule <- R6Class(
+  classname = "LF_static_rule",
+  portable = TRUE,
+  class = TRUE,
+  inherit = LF_base,
+  public = list(
+    initialize = function(name, type = "density", value, ...) {
       super$initialize(name, ..., type = type)
-      private$.rule_fun <- rule_fun
+      private$.value <- value
+      private$.variable_type <- variable_type("constant", value)
     },
-
-    get_mean = function(tmle_task, cv_fold) {
-      return(self$rule_fun)
+    get_mean = function(tmle_task, fold_number=-1) {
+      return(self$value)
     },
-
-    get_density = function(tmle_task, cv_fold) {
+    get_density = function(tmle_task, fold_number=-1) {
       observed <- tmle_task$get_tmle_node(self$name)
-      likelihood <- as.numeric(self$rule_fun == observed)
-
+      likelihood <- as.numeric(self$value == observed)
+      
       return(likelihood)
     },
-
     cf_values = function(tmle_task) {
-      cf_values <- self$rule_fun
+      cf_values <- self$value
       return(cf_values)
     }
   ),
-
-  active = list(rule_fun = function() {
-    return(private$.rule_fun)
-  }),
-
-  private = list(.name = NULL, .rule_fun = NULL, .is_degenerate = TRUE)
+  active = list(
+    value = function() {
+      return(private$.value)
+    }
+  ),
+  private = list(
+    .name = NULL,
+    .value = NULL,
+    .is_degenerate = TRUE
+  )
 )
