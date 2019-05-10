@@ -43,12 +43,12 @@ tmle3_Update_bound <- R6Class(
       # todo: support not getting observed for case where we're applying updates instead of fitting them
       clever_covariates <- lapply(self$tmle_params, function(tmle_param) tmle_param$clever_covariates(tmle_task, cv_fold))
       
-      observed_values <- lapply(update_nodes, tmle_task$get_tmle_node, bound = TRUE)
+      observed_values <- lapply(update_nodes, tmle_task$get_tmle_node)
       
       all_submodels <- lapply(update_nodes, function(update_node) {
         node_covariates <- lapply(clever_covariates, `[[`, update_node)
         covariates_dt <- do.call(cbind, node_covariates)
-        observed <- tmle_task$get_tmle_node(update_node, bound = TRUE)
+        observed <- tmle_task$get_tmle_node(update_node)
         initial <- likelihood$get_likelihood(tmle_task, update_node, cv_fold)
         initial <- self$bound(initial)
         submodel_data <- list(

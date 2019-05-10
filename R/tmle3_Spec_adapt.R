@@ -15,11 +15,11 @@ tmle3_Spec_adapt <- R6Class(
   inherit = tmle3_Spec,
   public = list(
     initialize = function(S = NULL, V = NULL, learners,
-                              param = "opt", training_size, test_size, mini_batch,
+                              param = "opt", training_size, test_size, mini_batch, grid_GG=TRUE,
                               Gexploit = 0.1, Gexplore = 0.05, ...) {
       options <- list(
         S = S, V = V, param = param, learners = learners,
-        training_size = training_size, test_size = test_size,
+        training_size = training_size, test_size = test_size, grid_GG=grid_GG,
         mini_batch = mini_batch, Gexploit = Gexploit, Gexplore = Gexplore
       )
       do.call(super$initialize, options)
@@ -207,7 +207,7 @@ tmle3_Spec_adapt <- R6Class(
       else {
         # TO DO: Change this to folds_rolling_origin...
         folds <- origami::make_folds(data,
-          fold_fun = folds_rolling_window,
+          fold_fun = origami::folds_rolling_window,
           window_size = training_size,
           validation_size = test_size, gap = 0,
           batch = mini_batch
@@ -218,9 +218,9 @@ tmle3_Spec_adapt <- R6Class(
       }
       return(tmle_task)
     },
-    make_updater = function() {
-      updater <- tmle3_Update_bound$new()
-    },
+    #make_updater = function() {
+    #  updater <- tmle3_Update2$new(cvtmle = FALSE)
+    #},
 
     blik = function(A, G) {
       return(A * G + (1 - A) * (1 - G))
@@ -251,35 +251,58 @@ tmle3_Spec_adapt <- R6Class(
     },
 
     get_Gstar = function(task, likelihood) {
-      Gexploit <- self$get_Gexploit
-      Gexplore <- self$get_Gexplore
-
+      
+      grid_GG <- self$get_grid_GG
+      
+      if(grid_GG){
+        #These indicate maximums
+        Gexploit <- self$get_Gexploit
+        Gexplore <- self$get_Gexplore
+        
+        if(0.005<Gexploit & 0.001<Gexplore){
+          Gexploits<-seq(from = 0.005, to = Gexploit, by = 0.01)
+          Gexplores<-seq(from = 0.001, to = Gexplore, by = 0.01)
+          
+          GGs <- expand.grid(Gexploits,Gexplores)
+          GGs <- apply(GGs, 1, function(x) {list(x)})
+        }else{
+          stop("Gexploit and/or Gexplore are too small!")
+        }
+        
+      }else{
+        #Evaluate at a single Gexploit/Gexplore option
+        Gexploits <- self$get_Gexploit
+        Gexplores <- self$get_Gexplore
+        
+        GGs <- expand.grid(Gexploits,Gexplores)
+        GGs <- apply(GGs, 1, function(x) {list(x)})
+      }
+      
       # TO DO: Limited to only binary at this point
       blip <- self$get_blip(task, likelihood)
 
-      Gstar <- self$smoothIndicator(blip, Gexploit, Gexplore)
+      #Extend to a grid of Gexploit and Gexplore 
+      Gstar <- lapply(GGs, function(x) self$smoothIndicator(blip, x[[1]][[1]], x[[1]][[2]]))
 
       return(Gstar)
+    },
+    
+    get_blip = function(task, likelihood) {
+      return(self$Q(task[[2]], likelihood) - self$Q(task[[1]], likelihood))
     },
 
     get_weight = function(G_ref, GstarW, A) {
 
       # P(A=a|W)
       GA <- self$blik(A, G_ref)
-      GAstarW <- self$blik(A, GstarW)
+      GAstarW <- lapply(GstarW, function(x) self$blik(A, x))
+      weight <- lapply(GAstarW, function(x) x/GA)
 
-      return(GAstarW / GA)
-    },
-
-    get_blip = function(task, likelihood) {
-      return(self$Q(task[[2]], likelihood) - self$Q(task[[1]], likelihood))
+      return(weight)
     },
 
     get_rule = function(task, likelihood) {
-      return(as.numeric(self$Q(task[[2]], likelihood) - self$Q(
-        task[[1]],
-        likelihood
-      ) > 0))
+      return(as.numeric(self$Q(task[[2]], likelihood) - self$Q(task[[1]],likelihood) > 0))
     },
 
     get_blip_cf = function(tmle_task) {
@@ -294,6 +317,51 @@ tmle3_Spec_adapt <- R6Class(
         return(cf_task)
       })
       return(cf_tasks)
+    },
+    
+    #Empirical Regret with Q0
+    #Q0 or Qn (even though Empirical Regret is defined through Q0)
+    #Q0 here is a function!
+    #rA is the estimated rule
+    empirical_regret_Q0 = function(Q0,rA,tmle_task){
+      
+      ### Empirical regret with the estimated rule:
+      #Get the estimated rule:
+      rA <- self$get_rA
+      
+      #Get the data and Ws:
+      data <- data.frame(tmle_task$data)
+      W <- data[,names(data)[grep("W", names(data))]]
+      
+      #Get regret:
+      regretQ0rn<-mean(tmle_task$data$Y - Q0(rA, W))
+      
+      ### Empirical regret with the true rule:
+      #TO DO: Limited to binary and blip...
+      A_vals <- tmle_task$npsem$A$variable_type$levels
+      r0 <- as.numeric(Q0(rep(A_vals[[2]]),W)-Q0(rep(A_vals[[1]]), W) > 0)
+      
+      #Get regret:
+      regretQ0r0<-mean(tmle_task$data$Y - Q0(r0, W))
+    
+      return(list(regretQ0rn=regretQ0rn, regretQ0r0=regretQ0r0))
+    },
+    
+    #Empirical Regret with Qn
+    #Q0 or Qn (even though Empirical Regret is defined through Q0)
+    #Qn here is the initial likelihood 
+    #rA is the estimated rule
+    empirical_regret_Qn = function(initial_likelihood,rA,tmle_task){
+      
+      ### Empirical regret with the estimated rule:
+      #Get the counterfactual task:
+      newdata <- data.table(A = rA)
+      cf_task <- tmle_task$generate_counterfactual_task(UUIDgenerate(),
+                                                        new_data = newdata)
+      #Get regret:
+      regretQnrn<-mean(tmle_task$data$Y - initial_likelihood$get_likelihood(cf_task, node="Y"))
+
+      return(list(regretQnrn=regretQnrn))
     },
 
     make_params = function(tmle_task, likelihood) {
@@ -324,14 +392,19 @@ tmle3_Spec_adapt <- R6Class(
       # Learn the rule:
       # NOTE: If Surrogate analysis, the rule is based on Y_S, so E(Y_S|W,A=1)-E(Y_S|W,A=0)
       rA <- self$get_rule(task = cf_tasks, likelihood)
+      private$.rA <- rA
 
-      lf_rule <- define_lf(LF_rule, "A", rule_fun = rA)
-
-      intervens <- Param_TSM_weight$new(
-        observed_likelihood = likelihood,
-        weight = weight,
-        intervention_list = lf_rule
-      )
+      #lf_rule <- define_lf(LF_rule, "A", rule_fun = self$get_rule(task = cf_tasks, likelihood))
+      lf_rule <- define_lf(LF_static_rule, name="A", value = rA)
+      
+      #This Param supports addition of weights
+      intervens <- lapply(weight, function(x){
+        Param_TSM_weight$new(
+          observed_likelihood = likelihood,
+          weight = x,
+          intervention_list = lf_rule
+        )
+      })
 
       return(intervens)
     }
@@ -360,6 +433,11 @@ tmle3_Spec_adapt <- R6Class(
 
     get_Gexplore = function() {
       t <- private$.options$Gexplore
+      return(t)
+    },
+    
+    get_grid_GG = function() {
+      t <- private$.options$grid_GG
       return(t)
     },
 
@@ -399,11 +477,15 @@ tmle3_Spec_adapt <- R6Class(
     # Useful for simulations.
     get_trueY = function() {
       return(private$.trueY)
+    },
+    get_rA = function() {
+      return(private$.rA)
     }
   ),
   private = list(
     .newW = NULL,
-    .trueY = NULL
+    .trueY = NULL,
+    .rA = NULL
   )
 )
 
@@ -435,11 +517,11 @@ tmle3_Spec_adapt <- R6Class(
 #' @export
 #
 tmle3_adapt <- function(S = NULL, V = NULL, learners,
-                        param = "opt", training_size, test_size, mini_batch,
+                        param = "opt", training_size, test_size, mini_batch, grid_GG=TRUE,
                         Gexploit = 0.1, Gexplore = 0.05) {
   tmle3_Spec_adapt$new(
     S = S, V = V, learners = learners, param = param,
-    training_size = training_size, test_size = test_size,
+    training_size = training_size, test_size = test_size, grid_GG=grid_GG,
     mini_batch = mini_batch, Gexploit = Gexploit, Gexplore = Gexplore
   )
 }
