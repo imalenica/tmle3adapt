@@ -21,13 +21,18 @@ v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/
 **Authors:** [Ivana Malenica](https://github.com/podTockom) and [Mark
 van der Laan](https://vanderlaan-lab.org)
 
------
+------------------------------------------------------------------------
 
-## What’s `tmle3adapt`?
+## Description
 
-The goal of `tmle3adapt` is to …
+The `tmle3adapt` is an adapter/extension R package in the `tlverse`
+ecosystem, that estimates the mean outcome under the following regimes
+in a sequential adaptive trial:
 
------
+1)  Optimal Individualized Treatment for binary treatment
+2)  Average Treatment Effect with/without surrogate outcomes.
+
+------------------------------------------------------------------------
 
 ## Installation
 
@@ -38,30 +43,35 @@ You can install the development version of `tmle3adapt` from GitHub via
 devtools::install_github("tlverse/tmle3adapt")
 ```
 
------
+------------------------------------------------------------------------
 
 ## Issues
 
 If you encounter any bugs or have any specific feature requests, please
 [file an issue](https://github.com/tlverse/tmle3adapt/issues).
 
------
+------------------------------------------------------------------------
 
-## Example
+## Citation
 
-This is a basic example which shows you how to solve a common problem:
+After using the tmle3adapt R package, please cite the following:
 
 ``` r
-# basic example code goes here
+@software{malenica2021tmle3adapt,
+      author = {Malenica, Ivana and {van der Laan}, Mark J},
+      title = {{tmle3adapt}: Targeted Sequential Designs for Learning Optimal Treatment Rules or Average Treatment Effects from Optimal Surrogates},
+      year  = {2021},
+      doi = {},
+      url = {https://github.com/imalenica/tmle3adapt},
+      note = {R package version 0.0.1}
+    }
 ```
-
------
 
 ## License
 
 The contents of this repository are distributed under the GPL-3 license.
 See file `LICENSE` for details.
 
------
+------------------------------------------------------------------------
 
 ## References

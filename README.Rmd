@@ -29,9 +29,12 @@ Laan](https://vanderlaan-lab.org)
 
 ---
 
-## What's `tmle3adapt`?
+## Description
 
-The goal of `tmle3adapt` is to ...
+The `tmle3adapt` is an adapter/extension R package in the `tlverse` ecosystem, that estimates the mean outcome under the following regimes in a sequential adaptive trial:
+
+(1) Optimal Individualized Treatment for binary treatment
+(2) Average Treatment Effect with/without surrogate outcomes.
 
 ---
 
@@ -53,15 +56,21 @@ issue](https://github.com/tlverse/tmle3adapt/issues).
 
 ---
 
-## Example
+## Citation 
 
-This is a basic example which shows you how to solve a common problem:
+After using the tmle3adapt R package, please cite the following:
 
-```{r example}
-# basic example code goes here
+```{r citation, eval=FALSE}
+
+@software{malenica2021tmle3adapt,
+      author = {Malenica, Ivana and {van der Laan}, Mark J},
+      title = {{tmle3adapt}: Targeted Sequential Designs for Learning Optimal Treatment Rules or Average Treatment Effects from Optimal Surrogates},
+      year  = {2021},
+      doi = {},
+      url = {https://github.com/imalenica/tmle3adapt},
+      note = {R package version 0.0.1}
+    }
 ```
-
----
 
 ## License
 
@@ -71,4 +80,3 @@ file `LICENSE` for details.
 ---
 
 ## References
-
